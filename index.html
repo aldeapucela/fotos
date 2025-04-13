@@ -19,6 +19,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
+      darkMode: 'media',
       theme: {
         extend: {
           colors: {
@@ -92,7 +93,7 @@
     }
     
     .view-toggle-active {
-      background-color: #f5f5f5;
+      @apply bg-instagram-100 dark:bg-instagram-700;
       color: #0095f6;
     }
     
@@ -111,27 +112,34 @@
     .photo-details {
       display: none;
     }
+
+    @media (prefers-color-scheme: dark) {
+      .date-filter-active {
+        color: #0095f6;
+        border-bottom: 2px solid #0095f6;
+      }
+    }
   </style>
 </head>
 
-<body class="bg-instagram-50 text-instagram-900 font-sans">
+<body class="bg-instagram-50 dark:bg-instagram-900 text-instagram-900 dark:text-instagram-50 font-sans">
 
   <!-- Header with navigation -->  
-  <header class="sticky top-0 z-50 bg-white border-b border-instagram-200 shadow-sm">
+  <header class="sticky top-0 z-50 bg-white dark:bg-instagram-800 border-b border-instagram-200 dark:border-instagram-700 shadow-sm">
     <div class="container mx-auto px-4 py-3 flex justify-between items-center">
       <div class="flex items-center gap-4">
         <a href="https://aldeapucela.org" class="text-instagram-500 hover:text-instagram-700" title="Volver a Aldea Pucela">
           <i class="fa-solid fa-house"></i>
         </a>
-        <h1 class="text-xl font-semibold text-[#57316b] bg-[#dfb59a] px-2 py-1 rounded uppercase font-bold">Aldea Pucela</h1>
+        <h1 class="text-xl font-semibold text-[#57316b] dark:text-[#dfb59a] bg-[#dfb59a] dark:bg-[#57316b] px-2 py-1 rounded uppercase font-bold">Aldea Pucela</h1>
       </div>
       <div class="flex items-center space-x-4">
         <!-- View toggle buttons -->
-        <div class="flex border border-instagram-200 rounded-md overflow-hidden">
-          <button id="gridViewBtn" class="view-toggle-active px-3 py-1.5 bg-white">
+        <div class="flex border border-instagram-200 dark:border-instagram-700 rounded-md overflow-hidden">
+          <button id="gridViewBtn" class="view-toggle-active px-3 py-1.5 bg-white dark:bg-instagram-800 text-instagram-500 dark:text-instagram-400">
             <i class="fa-solid fa-th text-lg"></i>
           </button>
-          <button id="listViewBtn" class="px-3 py-1.5 bg-white">
+          <button id="listViewBtn" class="px-3 py-1.5 bg-white dark:bg-instagram-800 text-instagram-500 dark:text-instagram-400">
             <i class="fa-solid fa-list text-lg"></i>
           </button>
         </div>
@@ -142,16 +150,16 @@
     </div>
 
     <!-- License notice banner -->
-  <div class="bg-instagram-100 text-instagram-700 text-sm px-4 py-3">
+  <div class="bg-instagram-100 dark:bg-instagram-800 text-instagram-700 dark:text-instagram-300 text-sm px-4 py-3">
     <div class="container mx-auto text-left flex justify-between items-center">
       <div>
         <p>Fotos de nuestra comunidad bajo licencia 
-          <a href="https://creativecommons.org/licenses/by-sa/4.0/deed.es" target="_blank" class="text-instagram-900 underline">
+          <a href="https://creativecommons.org/licenses/by-sa/4.0/deed.es" target="_blank" class="text-instagram-900 dark:text-instagram-300 underline">
             CC BY-SA 4.0</a> - Deber citase autor, url y licencia.</p>
       </div>
       <a href="https://t.me/AldeaPucela/27202/27203" 
          target="_blank"
-         class="inline-flex items-center gap-1 bg-instagram-50 text-instagram-600 px-3 py-1.5 rounded hover:bg-instagram-200 transition-colors text-sm">
+         class="inline-flex items-center gap-1 bg-instagram-50 text-instagram-600 px-3 py-1.5 rounded hover:bg-instagram-200 transition-colors text-sm ml-3">
         <i class="fa-solid fa-upload text-base"></i>
         <span>Subir</span>
       </a>
@@ -159,7 +167,7 @@
   </div>
     
     <!-- Date filter bar (initially hidden) -->  
-    <div id="dateFilterBar" class="hidden overflow-x-auto no-scrollbar border-t border-instagram-200 bg-white">
+    <div id="dateFilterBar" class="hidden overflow-x-auto no-scrollbar border-t border-instagram-200 dark:border-instagram-700 bg-white dark:bg-instagram-800">
       <div class="flex space-x-6 px-4 py-2 whitespace-nowrap">
         <button class="date-filter-active py-1 px-2 text-sm font-medium" data-filter="all">Todas</button>
         <!-- Date filters will be added here dynamically -->
@@ -178,7 +186,7 @@
   </main>
   
   <!-- Footer with license notice -->  
-  <footer class="mt-auto py-4 bg-white border-t border-instagram-200 text-center text-xs text-instagram-500 px-4">
+  <footer class="mt-auto py-4 bg-white dark:bg-instagram-800 border-t border-instagram-200 dark:border-instagram-700 text-center text-xs text-instagram-500 dark:text-instagram-400 px-4">
     <p>Las imágenes mostradas en esta galería están bajo licencia 
       <a href="https://creativecommons.org/licenses/by-sa/4.0/deed.es" target="_blank" class="text-instagram-700 hover:underline">
         <i class="fa-brands fa-creative-commons"></i>
@@ -205,7 +213,7 @@
         </div>
         
         <!-- Photo info -->  
-        <div class="bg-white p-4 rounded-b-lg">
+        <div class="bg-white dark:bg-instagram-800 p-4 rounded-b-lg">
           <div id="lightbox-desc" class="text-sm mb-3"></div>
           <div class="flex justify-between items-center">
             <div class="flex items-center text-sm">
@@ -428,7 +436,7 @@
             
             // Date header
             const fechaHeader = document.createElement('div');
-            fechaHeader.className = 'sticky top-[60px] bg-white/90 backdrop-blur-sm py-2 px-4 mb-4 font-medium text-sm border-b border-instagram-200 z-10';
+            fechaHeader.className = 'sticky top-[60px] bg-white/90 dark:bg-instagram-800/90 backdrop-blur-sm py-2 px-4 mb-4 font-medium text-sm border-b border-instagram-200 dark:border-instagram-700 z-10';
             fechaHeader.textContent = new Date(fecha).toLocaleDateString('es', {
               weekday: 'long',
               year: 'numeric',
@@ -443,7 +451,7 @@
             // Create photo cards
             fotos.forEach(data => {
               const item = document.createElement('div');
-              item.className = 'bg-white rounded-lg shadow-sm overflow-hidden transform transition-transform hover:shadow-md active:scale-[0.98]';
+              item.className = 'bg-white dark:bg-instagram-800 rounded-lg shadow-sm overflow-hidden transform transition-transform hover:shadow-md active:scale-[0.98]';
               item.onclick = () => openLightbox(data.path, data);
               
               // Extract filename to create Telegram link
@@ -458,7 +466,7 @@
 
               // Simple grid photo layout with details only shown in list view
               item.innerHTML = `
-                <div class="photo-card-image relative pb-[100%] bg-instagram-100">
+                <div class="photo-card-image relative pb-[100%] bg-instagram-100 dark:bg-instagram-700">
                   <img data-src="${data.path}" alt="${data.description || ''}" 
                        class="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-300">
                 </div>
