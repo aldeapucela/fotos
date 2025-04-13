@@ -136,16 +136,10 @@
           <div class="text-sm text-[#57316b] dark:text-[#dfb59a] bg-[#dfb59a] dark:bg-[#57316b] px-2 py-0.5 rounded uppercase font-bold inline-block"><a href="https://aldeapucela.org/">Aldea Pucela</a></div>
         </div>
       </div>
-      <div class="flex items-center space-x-4">
-        <!-- View toggle buttons -->
-        <div class="flex border border-instagram-200 dark:border-instagram-700 rounded-md overflow-hidden">
-          <button id="gridViewBtn" class="view-toggle-active px-3 py-1.5 bg-white dark:bg-instagram-800 text-instagram-500 dark:text-instagram-400">
-            <i class="fa-solid fa-th text-lg"></i>
-          </button>
-          <button id="listViewBtn" class="px-3 py-1.5 bg-white dark:bg-instagram-800 text-instagram-500 dark:text-instagram-400">
-            <i class="fa-solid fa-list text-lg"></i>
-          </button>
-        </div>
+      <div class="flex gap-4 items-end">
+        <a href="/etiquetas.html" class="text-instagram-500 hover:text-instagram-900 transition-colors" title="Ver tags populares">
+          <i class="fa-solid fa-tags text-lg"></i>
+        </a>
         <button id="filterToggle" class="text-instagram-500 hover:text-instagram-900 transition-colors">
           <i class="fa-solid fa-filter text-lg"></i>
         </button>
@@ -153,27 +147,34 @@
     </div>
 
     <!-- License notice banner -->
-  <div class="bg-instagram-100 dark:bg-instagram-800 text-instagram-700 dark:text-instagram-300 text-xs px-4 py-3">
-    <div class="container mx-auto text-left flex justify-between items-center">
-      <div>
-        <p>Fotos de nuestra comunidad bajo licencia 
-          <a href="https://creativecommons.org/licenses/by-sa/4.0/deed.es" target="_blank" class="text-instagram-900 dark:text-instagram-300 underline">
-            CC BY-SA 4.0</a> - Deber citase autor, url y licencia.</p>
+    <div class="bg-instagram-100 dark:bg-instagram-800 text-instagram-700 dark:text-instagram-300 text-xs px-4 py-3">
+      <div class="container mx-auto text-left flex justify-between items-center">
+        <div>
+          <p>Fotos de nuestra comunidad bajo licencia 
+            <a href="https://creativecommons.org/licenses/by-sa/4.0/deed.es" target="_blank" class="text-instagram-900 dark:text-instagram-300 underline">
+              CC BY-SA 4.0</a> - Deber citase autor, url y licencia.</p>
+        </div>
+        <a href="https://t.me/AldeaPucela/27202/27203" 
+           target="_blank"
+           class="inline-flex items-center gap-1 bg-instagram-50 text-instagram-600 px-3 py-1.5 rounded hover:bg-instagram-200 transition-colors text-xs ml-3">
+          <i class="fa-solid fa-upload text-base"></i>
+          <span>Subir</span>
+        </a>
       </div>
-      <a href="https://t.me/AldeaPucela/27202/27203" 
-         target="_blank"
-         class="inline-flex items-center gap-1 bg-instagram-50 text-instagram-600 px-3 py-1.5 rounded hover:bg-instagram-200 transition-colors text-xs ml-3">
-        <i class="fa-solid fa-upload text-base"></i>
-        <span>Subir</span>
-      </a>
     </div>
-  </div>
     
     <!-- Date filter bar (initially hidden) -->  
     <div id="dateFilterBar" class="hidden overflow-x-auto no-scrollbar border-t border-instagram-200 dark:border-instagram-700 bg-white dark:bg-instagram-800">
       <div class="flex space-x-6 px-4 py-2 whitespace-nowrap">
         <button class="date-filter-active py-1 px-2 text-sm font-medium" data-filter="all">Todas</button>
         <!-- Date filters will be added here dynamically -->
+      </div>
+    </div>
+
+    <!-- Tags filter bar (initially hidden) -->
+    <div id="tagsFilterBar" class="hidden overflow-x-auto no-scrollbar border-t border-instagram-200 dark:border-instagram-700 bg-white dark:bg-instagram-800">
+      <div class="flex space-x-6 px-4 py-2 whitespace-nowrap">
+        <!-- Tags will be added here dynamically -->
       </div>
     </div>
   </header>
@@ -188,11 +189,21 @@
 
     <!-- Main content -->
   <main class="container mx-auto px-2 sm:px-4 py-4">
-    <div id="tagTitle" class="hidden mb-4 px-2">
-      <div class="flex items-center justify-between">
-        <h2 class="text-lg font-medium"><span class="text-instagram-600 dark:text-instagram-400"></span></h2>
-        <button class="text-instagram-500 hover:text-instagram-700" onclick="shareTagCollection()" title="Compartir colección">
-          <i class="fa-solid fa-share-nodes text-xl"></i>
+    <div class="flex justify-between items-center mb-4">
+      <div id="tagTitle" class="hidden">
+        <div class="flex items-center gap-4">
+          <h2 class="text-lg font-medium"><span class="text-instagram-600 dark:text-instagram-400"></span></h2>
+          <button class="text-instagram-500 hover:text-instagram-700" onclick="shareTagCollection()" title="Compartir colección">
+            <i class="fa-solid fa-share-nodes text-xl"></i>
+          </button>
+        </div>
+      </div>
+      <div class="flex border border-instagram-200 dark:border-instagram-700 rounded-md overflow-hidden">
+        <button id="gridViewBtn" class="view-toggle-active px-3 py-1.5 bg-white dark:bg-instagram-800 text-instagram-500 dark:text-instagram-400">
+          <i class="fa-solid fa-th text-lg"></i>
+        </button>
+        <button id="listViewBtn" class="px-3 py-1.5 bg-white dark:bg-instagram-800 text-instagram-500 dark:text-instagram-400">
+          <i class="fa-solid fa-list text-lg"></i>
         </button>
       </div>
     </div>
@@ -357,13 +368,15 @@
     const lightboxLicense = document.getElementById('lightbox-license');
     const filterToggle = document.getElementById('filterToggle');
     const dateFilterBar = document.getElementById('dateFilterBar');
+    const tagsFilterBar = document.getElementById('tagsFilterBar');
     const gridViewBtn = document.getElementById('gridViewBtn');
     const listViewBtn = document.getElementById('listViewBtn');
     const contenidoEl = document.getElementById('contenido');
     
-    // Toggle date filter bar
+    // Toggle filter bars
     filterToggle.addEventListener('click', () => {
       dateFilterBar.classList.toggle('hidden');
+      tagsFilterBar.classList.toggle('hidden');
     });
     
     // Toggle view modes (grid vs list)
@@ -472,6 +485,26 @@
         const response = await fetch('fotos.db');
         const buffer = await response.arrayBuffer();
         const db = new SQL.Database(new Uint8Array(buffer));
+        
+        // Load tags from cache
+        const tagsResponse = await fetch('tags-cache.json');
+        const tagsData = await tagsResponse.json();
+        
+        // Add tags to the filter bar
+        const tagsFilterBar = document.querySelector('#tagsFilterBar > div');
+        tagsData.tags.forEach(({tag}) => {
+          const tagBtn = document.createElement('button');
+          tagBtn.className = 'py-1 px-2 text-sm font-medium text-instagram-500 hover:text-instagram-600';
+          tagBtn.dataset.tag = tag.substring(1); // Remove # from tag
+          tagBtn.textContent = tag;
+          tagBtn.onclick = (e) => {
+            e.preventDefault();
+            filterByTag(e, tag.substring(1));
+          };
+          tagsFilterBar.appendChild(tagBtn);
+        });
+
+        // Continue with existing query for photos
         const res = db.exec("SELECT *, date(date) as fecha_grupo FROM imagenes ORDER BY date DESC");
         
         const contenido = document.getElementById('contenido');
@@ -718,8 +751,6 @@
         }).catch(console.error);
       }
     }
-
-    // Initialize SQL.js and load the database
   </script>
   <script>
     // Matomo
