@@ -7,7 +7,7 @@ import re
 def update_tags_cache():
     try:
         # Connect to SQLite database
-        conn = sqlite3.connect('fotos.db')
+        conn = sqlite3.connect('../fotos.db')
         cursor = conn.cursor()
         
         # Get all descriptions
