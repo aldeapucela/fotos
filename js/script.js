@@ -12,6 +12,64 @@ function updateUrl(photoId) {
     }
 }
 
+// Search photos by text
+function searchPhotos(text) {
+  if (!text.trim()) {
+    clearSearch();
+    return;
+  }
+
+  const searchTerm = text.toLowerCase().trim();
+  
+  // Update URL
+  const url = new URL(window.location);
+  url.searchParams.set('search', searchTerm);
+  window.history.pushState({}, '', url);
+  
+  // Filter photos
+  let foundPhotos = false;
+  document.querySelectorAll('.date-group').forEach(group => {
+    let hasVisiblePhotos = false;
+    group.querySelectorAll('.photo-card').forEach(card => {
+      const description = (card.dataset.description || '').toLowerCase();
+      if (description.includes(searchTerm)) {
+        card.classList.remove('hidden');
+        hasVisiblePhotos = true;
+        foundPhotos = true;
+      } else {
+        card.classList.add('hidden');
+      }
+    });
+    group.classList.toggle('hidden', !hasVisiblePhotos);
+  });
+
+  // Show no results message if no photos found
+  const contenido = document.getElementById('contenido');
+  if (!foundPhotos) {
+    contenido.innerHTML = `<div class="text-center py-20 text-instagram-500">No hay fotos que contengan "${text}"</div>`;
+  }
+
+  // Show search filter indicator
+  const searchFilter = document.getElementById('searchFilter');
+  document.getElementById('searchTerm').textContent = text;
+  searchFilter.classList.remove('hidden');
+}
+
+// Clear search
+function clearSearch() {
+  const url = new URL(window.location);
+  url.searchParams.delete('search');
+  window.history.pushState({}, '', url);
+  
+  document.querySelectorAll('.date-group, .photo-card').forEach(el => {
+    el.classList.remove('hidden');
+  });
+
+  // Hide search filter indicator
+  document.getElementById('searchFilter').classList.add('hidden');
+  document.getElementById('searchInput').value = '';
+}
+
 // Convert hashtags to links
 function convertHashtagsToLinks(text) {
   if (!text) return '';
@@ -99,6 +157,18 @@ const tagsFilterBar = document.getElementById('tagsFilterBar');
 const gridViewBtn = document.getElementById('gridViewBtn');
 const listViewBtn = document.getElementById('listViewBtn');
 const contenidoEl = document.getElementById('contenido');
+const searchInput = document.getElementById('searchInput');
+
+// Add search input event listener
+if (searchInput) {
+  let searchTimeout;
+  searchInput.addEventListener('input', (e) => {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+      searchPhotos(e.target.value);
+    }, 300); // Debounce search for better performance
+  });
+}
 
 // Toggle filter bars
 filterToggle.addEventListener('click', () => {
@@ -204,6 +274,15 @@ const urlParams = new URLSearchParams(window.location.search);
 const tagParam = urlParams.get('tag');
 if (tagParam) {
   setTimeout(() => filterByTag(new Event('click'), tagParam), 500);
+}
+
+// Check for search param in URL
+const searchParam = urlParams.get('search');
+if (searchParam) {
+  setTimeout(() => {
+    searchInput.value = searchParam;
+    searchPhotos(searchParam);
+  }, 500);
 }
 
 // Initialize SQL.js and load the database
@@ -484,3 +563,23 @@ function shareTagCollection() {
     }).catch(console.error);
   }
 }
+
+// Search bar toggle
+const searchToggle = document.getElementById('searchToggle');
+const searchBar = document.getElementById('searchBar');
+
+searchToggle.addEventListener('click', () => {
+  searchBar.classList.toggle('hidden');
+  if (!searchBar.classList.contains('hidden')) {
+    searchInput.focus();
+  }
+});
+
+// Close search bar when clicking outside
+document.addEventListener('click', (e) => {
+  if (!searchBar.classList.contains('hidden') && 
+      !searchBar.contains(e.target) && 
+      !searchToggle.contains(e.target)) {
+    searchBar.classList.add('hidden');
+  }
+});
