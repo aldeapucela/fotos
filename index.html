@@ -307,13 +307,21 @@
       
       // Format date nicely
       const photoDate = new Date(data.date);
-      const formattedDate = photoDate.toLocaleDateString('es', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
+      const formattedDate = window.innerWidth <= 640 
+        ? photoDate.toLocaleString('es', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          })
+        : photoDate.toLocaleDateString('es', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          });
       
       lightboxFecha.textContent = formattedDate;
       const filename = data.path.split('/').pop();
@@ -491,10 +499,19 @@
                     </div>
                     <div class="text-xs text-instagram-500">
                       <i class="fa-regular fa-clock mr-1"></i>
-                      ${new Date(data.date).toLocaleTimeString('es', {
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
+                      ${window.innerWidth <= 640 
+                        ? new Date(data.date).toLocaleString('es', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })
+                        : new Date(data.date).toLocaleTimeString('es', {
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })
+                      }
                     </div>
                   </div>
                   ${data.description ? `<p class="text-sm text-instagram-500 line-clamp-2">${data.description}</p>` : ''}
