@@ -96,4 +96,4 @@ VALUES
 ```
 
 ## Licencia
-Las imágenes están bajo licencia CC BY-SA 4.0. Debe citarse autor, URL y licencia.
+El código fuente está bajo licencia [GNU Affero General Public License v3](LICENSE). Vea el archivo LICENSE para más detalles.
