@@ -6,19 +6,23 @@ import argparse
 
 def delete_photo(photo_id):
     try:
-        conn = sqlite3.connect('fotos.db')
+        # Get the project root directory (parent of scripts directory)
+        project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        db_path = os.path.join(project_root, 'fotos.db')
+        conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
         
         # Construir el nombre del archivo basado en el ID
-        file_path = f"{photo_id}.jpg"
+        file_name = f"{photo_id}.jpg"
+        file_path = os.path.join(project_root, 'files', file_name)
         
         # Borrar el registro de la base de datos
-        cursor.execute("DELETE FROM imagenes WHERE path = ?", (file_path,))
+        cursor.execute("DELETE FROM imagenes WHERE path = ?", (file_name,))
         rows_affected = cursor.rowcount
         conn.commit()
         
         if rows_affected == 0:
-            print(f"No se encontró la foto {file_path} en la base de datos")
+            print(f"No se encontró la foto {file_name} en la base de datos")
             return False
         
         # Borrar el archivo si existe
@@ -28,7 +32,7 @@ def delete_photo(photo_id):
         else:
             print(f"Advertencia: El archivo no existe en el sistema: {file_path}")
             
-        print(f"Foto {file_path} eliminada correctamente de la base de datos")
+        print(f"Foto {file_name} eliminada correctamente de la base de datos")
         return True
         
     except sqlite3.Error as e:
