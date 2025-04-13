@@ -128,12 +128,12 @@
   <header class="sticky top-0 z-50 bg-white dark:bg-instagram-800 border-b border-instagram-200 dark:border-instagram-700 shadow-sm">
     <div class="container mx-auto px-4 py-3 flex justify-between items-center">
       <div class="flex items-center gap-4">
-        <a href="https://aldeapucela.org" class="text-instagram-500 hover:text-instagram-700" title="Volver a Aldea Pucela">
+        <a href="/" class="text-instagram-500 hover:text-instagram-700" title="Volver a Aldea Pucela">
           <i class="fa-solid fa-house"></i>
         </a>
         <div>
           <h1 class="text-xl font-semibold">Fotos de Valladolid</h1>
-          <div class="text-sm text-[#57316b] dark:text-[#dfb59a] bg-[#dfb59a] dark:bg-[#57316b] px-2 py-0.5 rounded uppercase font-bold inline-block">Aldea Pucela</div>
+          <div class="text-sm text-[#57316b] dark:text-[#dfb59a] bg-[#dfb59a] dark:bg-[#57316b] px-2 py-0.5 rounded uppercase font-bold inline-block"><a href="https://aldeapucela.org/">Aldea Pucela</a></div>
         </div>
       </div>
       <div class="flex items-center space-x-4">
@@ -178,8 +178,24 @@
     </div>
   </header>
 
-  <!-- Main content -->  
+  <!-- Tag filter indicator -->
+    <div id="tagFilter" class="hidden fixed bottom-4 left-1/2 -translate-x-1/2 bg-instagram-600 text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2">
+      <span id="tagName"></span>
+      <button onclick="clearTagFilter()" class="ml-2 hover:text-instagram-200">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <!-- Main content -->
   <main class="container mx-auto px-2 sm:px-4 py-4">
+    <div id="tagTitle" class="hidden mb-4 px-2">
+      <div class="flex items-center justify-between">
+        <h2 class="text-lg font-medium">Fotos con <span class="text-instagram-600 dark:text-instagram-400"></span></h2>
+        <button class="text-instagram-500 hover:text-instagram-700" onclick="shareTagCollection()" title="Compartir colección">
+          <i class="fa-solid fa-share-nodes text-xl"></i>
+        </button>
+      </div>
+    </div>
     <div id="contenido" class="pb-20">
       <div class="flex justify-center items-center py-20">
         <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-instagram-600"></div>
@@ -266,6 +282,72 @@
         }
     }
 
+    // Convert hashtags to links
+    function convertHashtagsToLinks(text) {
+      if (!text) return '';
+      return text.replace(/#(\w+)/g, (match, tag) => {
+        const normalizedTag = tag.toLowerCase();
+        return `<a href="?tag=${normalizedTag}" class="text-instagram-600 dark:text-instagram-400 hover:underline" onclick="filterByTag(event, '${normalizedTag}')">#${tag}</a>`;
+      });
+    }
+
+    // Filter photos by tag
+    function filterByTag(event, tag) {
+      event.preventDefault();
+      event.stopPropagation();
+      
+      // Close lightbox if open
+      closeLightbox();
+      
+      const normalizedTag = tag.toLowerCase();
+      
+      // Update URL and title
+      const url = new URL(window.location);
+      url.searchParams.set('tag', normalizedTag);
+      window.history.pushState({}, '', url);
+
+      // Show tag filter UI
+      const tagTitle = document.getElementById('tagTitle');
+      tagTitle.querySelector('span').textContent = '#' + tag;
+      tagTitle.classList.remove('hidden');
+      
+      // Filter visible photos
+      document.querySelectorAll('.date-group').forEach(group => {
+        let hasVisiblePhotos = false;
+        group.querySelectorAll('.photo-card').forEach(card => {
+          const description = (card.dataset.description || '').toLowerCase();
+          if (description.includes('#' + normalizedTag)) {
+            card.classList.remove('hidden');
+            hasVisiblePhotos = true;
+          } else {
+            card.classList.add('hidden');
+          }
+        });
+        group.classList.toggle('hidden', !hasVisiblePhotos);
+      });
+
+      // Show tag filter indicator
+      const tagFilter = document.getElementById('tagFilter');
+      const tagName = document.getElementById('tagName');
+      tagName.textContent = `#${tag}`;
+      tagFilter.classList.remove('hidden');
+    }
+
+    // Clear tag filter
+    function clearTagFilter() {
+      const url = new URL(window.location);
+      url.searchParams.delete('tag');
+      window.history.pushState({}, '', url);
+      
+      document.querySelectorAll('.date-group, .photo-card').forEach(el => {
+        el.classList.remove('hidden');
+      });
+
+      // Hide tag filter indicator and title
+      document.getElementById('tagFilter').classList.add('hidden');
+      document.getElementById('tagTitle').classList.add('hidden');
+    }
+
     // DOM Elements
     const lightbox = document.getElementById('lightbox');
     const lightboxImg = document.getElementById('lightbox-img');
@@ -300,7 +382,7 @@
     // Open lightbox with photo details
     function openLightbox(imgSrc, data) {
       lightboxImg.src = imgSrc;
-      lightboxDesc.textContent = data.description || '';
+      lightboxDesc.innerHTML = data.description ? convertHashtagsToLinks(data.description) : '';
       lightboxAutor.textContent = data.author;
       
       // Set download link
@@ -376,6 +458,13 @@
 
     // Gestos táctiles para el lightbox
     // Touch gesture variables and handlers already defined below
+
+    // Check for tag filter in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const tagParam = urlParams.get('tag');
+    if (tagParam) {
+      setTimeout(() => filterByTag(new Event('click'), tagParam), 500);
+    }
 
     // Initialize SQL.js and load the database
     initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${file}` }).then(async SQL => {
@@ -475,8 +564,9 @@
             // Create photo cards
             fotos.forEach(data => {
               const item = document.createElement('div');
-              item.className = 'bg-white dark:bg-instagram-800 rounded-lg shadow-sm overflow-hidden transform transition-transform hover:shadow-md active:scale-[0.98]';
+              item.className = 'photo-card bg-white dark:bg-instagram-800 rounded-lg shadow-sm overflow-hidden transform transition-transform hover:shadow-md active:scale-[0.98]';
               item.onclick = () => openLightbox(data.path, data);
+              item.dataset.description = data.description || '';
               
               // Extract filename to create Telegram link
               const filename = data.path.split('/').pop();
@@ -517,7 +607,7 @@
                       }
                     </div>
                   </div>
-                  ${data.description ? `<p class="text-sm text-instagram-500 line-clamp-2">${data.description}</p>` : ''}
+                  ${data.description ? `<p class="text-sm text-instagram-500 line-clamp-2">${convertHashtagsToLinks(data.description)}</p>` : ''}
                   <div class="mt-2 flex justify-between items-center text-instagram-400 text-lg">
                     <div class="actions" onclick="event.stopPropagation()">
                       <button type="button" class="share-button hover:text-instagram-600 mr-3" 
@@ -532,8 +622,7 @@
                         <i class="fa-brands fa-telegram"></i>
                       </a>
                     </div>
-                  </div>
-                </div>`;
+                  </div>`;
 
               // Observe image for lazy loading
               const img = item.querySelector('img');
@@ -608,9 +697,31 @@
         }).catch(console.error);
       }
     }
+
+    // Add share functionality for tag collection
+    function shareTagCollection() {
+      const tag = new URLSearchParams(window.location.search).get('tag');
+      if (!tag) return;
+      
+      const url = `${window.location.origin}${window.location.pathname}?tag=${tag}`;
+      const shareText = `Mira esta colección de fotos de Valladolid con #${tag} en Aldea Pucela\n\n`;
+
+      if (navigator.share) {
+        navigator.share({
+          url: url,
+          title: `Fotos con #${tag} - Aldea Pucela`,
+          text: shareText
+        }).catch(console.error);
+      } else {
+        navigator.clipboard.writeText(shareText + url).then(() => {
+          alert('URL copiada al portapapeles');
+        }).catch(console.error);
+      }
+    }
+
+    // Initialize SQL.js and load the database
   </script>
   <script>
-    lucide.createIcons();
 
     // Matomo
     var _paq = window._paq = window._paq || [];
