@@ -510,6 +510,11 @@
         const contenido = document.getElementById('contenido');
         contenido.innerHTML = '';
 
+        // Ensure paths point to /files/ subdirectory
+        function getImagePath(path) {
+          return path.startsWith('/') ? `/files${path}` : `/files/${path}`;
+        }
+
         // Check for direct photo access from URL
         const photoIdFromUrl = getPhotoIdFromUrl();
         let photoToOpen = null;
@@ -521,6 +526,7 @@
           // Process data and group by date
           const grupos = rows.reduce((acc, row) => {
             const data = Object.fromEntries(cols.map((c, i) => [c, row[i]]));
+            data.path = getImagePath(data.path); // Update path to use /files/
             const fecha = data.fecha_grupo;
             if (!acc[fecha]) acc[fecha] = [];
             acc[fecha].push(data);
