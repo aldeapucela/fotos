@@ -316,13 +316,14 @@
       const url = new URL(window.location);
       url.searchParams.set('tag', normalizedTag);
       window.history.pushState({}, '', url);
-
+      
       // Show tag filter UI
       const tagTitle = document.getElementById('tagTitle');
       tagTitle.querySelector('span').textContent = '#' + tag;
       tagTitle.classList.remove('hidden');
       
-      // Filter visible photos
+      // Filter visible photos and check if any found
+      let foundPhotos = false;
       document.querySelectorAll('.date-group').forEach(group => {
         let hasVisiblePhotos = false;
         group.querySelectorAll('.photo-card').forEach(card => {
@@ -330,12 +331,19 @@
           if (description.includes('#' + normalizedTag)) {
             card.classList.remove('hidden');
             hasVisiblePhotos = true;
+            foundPhotos = true;
           } else {
             card.classList.add('hidden');
           }
         });
         group.classList.toggle('hidden', !hasVisiblePhotos);
       });
+
+      // Show no results message if no photos found
+      const contenido = document.getElementById('contenido');
+      if (!foundPhotos) {
+        contenido.innerHTML = `<div class="text-center py-20 text-instagram-500">No hay fotos con la etiqueta #${tag}</div>`;
+      }
 
       // Show tag filter indicator
       const tagFilter = document.getElementById('tagFilter');
