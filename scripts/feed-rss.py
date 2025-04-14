@@ -5,6 +5,17 @@ from datetime import datetime
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
 
+def iso8601_to_rfc822(iso_date):
+    """Convert ISO 8601 date to RFC 822 format required by RSS"""
+    try:
+        # Parse ISO 8601 date (2025-04-13T14:45:42.025+02:00)
+        date_part, tz = iso_date.split('+')
+        dt = datetime.fromisoformat(date_part)
+        # Convert to RFC 822 format
+        return dt.strftime('%a, %d %b %Y %H:%M:%S +') + tz.replace(':', '')
+    except:
+        return datetime.now().strftime('%a, %d %b %Y %H:%M:%S +0200')
+
 def generate_rss():
     try:
         # Get the project root directory (parent of scripts directory)
@@ -37,7 +48,7 @@ def generate_rss():
         
         # Add item generation time
         lastBuildDate = ET.SubElement(channel, 'lastBuildDate')
-        lastBuildDate.text = datetime.now().strftime('%a, %d %b %Y %H:%M:%S +0000')
+        lastBuildDate.text = datetime.now().strftime('%a, %d %b %Y %H:%M:%S +0200')
         
         # Connect to database and get latest 100 photos
         conn = sqlite3.connect(db_path)
@@ -82,13 +93,9 @@ def generate_rss():
                 html_desc += f'<p><a href="https://t.me/AldeaPucela/27202/{image_id}">Ver original</a></p>'
             item_desc.text = html_desc
             
-            # Publication date
+            # Publication date - Convert ISO 8601 to RFC 822
             pub_date = ET.SubElement(item, 'pubDate')
-            try:
-                dt = datetime.strptime(date, '%Y-%m-%d %H:%M:%S')
-                pub_date.text = dt.strftime('%a, %d %b %Y %H:%M:%S +0000')
-            except:
-                pub_date.text = datetime.now().strftime('%a, %d %b %Y %H:%M:%S +0000')
+            pub_date.text = iso8601_to_rfc822(date)
             
             # Unique ID
             guid = ET.SubElement(item, 'guid')
