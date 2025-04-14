@@ -523,6 +523,24 @@ window.addEventListener('popstate', () => {
   }
 });
 
+// Add general share functionality
+function shareGeneral() {
+    const url = window.location.href;
+    const shareText = `Mira esta colección de fotos de Valladolid de Aldea Pucela\n\n`;
+    
+    if (navigator.share) {
+        navigator.share({
+        url: url,
+        title: 'Fotos de Valladolid - Aldea Pucela',
+        text: shareText
+        }).catch(console.error);
+    } else {
+        navigator.clipboard.writeText(shareText + url).then(() => {
+        alert('URL copiada al portapapeles');
+        }).catch(console.error);
+    }
+    }
+
 // Add share functionality
 function sharePhoto(url, description = '') {
   const shareText = description 
