@@ -1,0 +1,77 @@
+/* Custom styles that complement Tailwind */
+body { 
+    overscroll-behavior: contain;
+  }
+
+  .photo-card-image {
+    aspect-ratio: 1/1;
+  }
+
+  .card img.loaded {
+    opacity: 1;
+  }
+  
+  .lightbox {
+    touch-action: none;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+  }
+  
+  .lightbox.active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  
+  .lightbox-img {
+    transform: scale(0.9);
+    transition: transform 0.3s;
+  }
+  
+  .lightbox.active .lightbox-img {
+    transform: scale(1);
+  }
+  
+  /* Hide scrollbar for Chrome, Safari and Opera */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  
+  /* Hide scrollbar for IE, Edge and Firefox */
+  .no-scrollbar {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+  
+  .date-filter-active {
+    color: #0095f6;
+    border-bottom: 2px solid #0095f6;
+  }
+  
+  .view-toggle-active {
+    @apply bg-instagram-100 dark:bg-instagram-700;
+    color: #0095f6;
+  }
+  
+  .list-view .grid {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .list-view .photo-card-image {
+    padding-bottom: 50% !important;
+  }
+
+  .list-view .photo-details {
+    display: block !important;
+  }
+
+  .photo-details {
+    display: none;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .date-filter-active {
+      color: #0095f6;
+      border-bottom: 2px solid #0095f6;
+    }
+  }

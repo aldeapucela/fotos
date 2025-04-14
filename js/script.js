@@ -409,7 +409,7 @@ initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1
         // Create photo cards
         fotos.forEach(data => {
           const item = document.createElement('div');
-          item.className = 'photo-card bg-white dark:bg-instagram-800 rounded-lg shadow-sm overflow-hidden transform transition-transform hover:shadow-md active:scale-[0.98]';
+          item.className = 'photo-card bg-white dark:bg-instagram-800 rounded-lg shadow-sm overflow-hidden transform transition-transform hover:shadow-md active:scale-[0.98] cursor-pointer';
           item.onclick = () => openLightbox(data.path, data);
           item.dataset.description = data.description || '';
           
