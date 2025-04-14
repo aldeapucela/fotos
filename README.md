@@ -9,8 +9,10 @@ aldeapucela/fotos/
 ├── scripts/          # Scripts de mantenimiento
 │   ├── subir-foto.py
 │   ├── borrar-foto.py
+│   ├── feed-rss.py   # Generador del feed RSS
 │   └── update-tags.py
 ├── fotos.db          # Base de datos SQLite
+├── feed.xml          # Feed RSS con las últimas 100 fotos
 ├── tags-cache.json   # Caché de etiquetas
 ├── index.html        # Galería principal
 └── etiquetas.html    # Vista de etiquetas
@@ -30,6 +32,15 @@ CREATE TABLE imagenes (
 ```
 
 ## Scripts de mantenimiento
+
+### Feed RSS
+```bash
+./scripts/feed-rss.py
+```
+- Genera un feed RSS con las últimas 100 fotos
+- Incluye descripciones, autores y enlaces directos
+- Indica la licencia CC BY-SA 4.0 de las imágenes
+- Se recomienda ejecutar cada hora en un cron
 
 ### Borrar fotos
 ```bash

@@ -1,3 +1,4 @@
 files/*.jpg
 *.db
 tags-cache.json
+feed.xml
