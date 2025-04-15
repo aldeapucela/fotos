@@ -10,23 +10,41 @@ def update_tags_cache():
         conn = sqlite3.connect('../fotos.db')
         cursor = conn.cursor()
         
-        # Get all descriptions
-        cursor.execute("SELECT description FROM imagenes WHERE description IS NOT NULL")
-        descriptions = cursor.fetchall()
+        # Get all descriptions with their corresponding paths and dates
+        cursor.execute("""
+            SELECT description, path, date 
+            FROM imagenes 
+            WHERE description IS NOT NULL 
+            ORDER BY date DESC
+        """)
+        photos = cursor.fetchall()
         
-        # Count tags
-        tags_count = {}
-        for (description,) in descriptions:
+        # Count tags and track latest photos
+        tags_data = {}
+        for description, path, date in photos:
             if description:
                 matches = re.finditer(r'#(\w+)', description.lower())
                 for match in matches:
                     tag = match.group(0)  # includes the # symbol
-                    tags_count[tag] = tags_count.get(tag, 0) + 1
+                    if tag not in tags_data:
+                        tags_data[tag] = {
+                            "count": 0,
+                            "latest_photos": []
+                        }
+                    tags_data[tag]["count"] += 1
+                    
+                    # Keep only the 4 most recent photos for each tag
+                    if len(tags_data[tag]["latest_photos"]) < 4:
+                        tags_data[tag]["latest_photos"].append(path)
         
         # Sort tags by frequency
         sorted_tags = [
-            {"tag": tag, "count": count}
-            for tag, count in sorted(tags_count.items(), key=lambda x: (-x[1], x[0]))
+            {
+                "tag": tag,
+                "count": data["count"],
+                "latest_photos": data["latest_photos"]
+            }
+            for tag, data in sorted(tags_data.items(), key=lambda x: (-x[1]["count"], x[0]))
         ]
         
         # Create cache data
