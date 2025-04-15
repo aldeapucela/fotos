@@ -201,7 +201,7 @@ function openLightbox(imgSrc, data) {
     data: {
       description: card.dataset.description,
       author: card.querySelector('.font-medium').textContent.trim(),
-      date: card.querySelector('.text-xs').textContent.trim(),
+      date: card.querySelector('.text-xs').dataset.originalDate, // Use original date from data attribute
       path: card.querySelector('img').dataset.src
     }
   }));
@@ -212,18 +212,31 @@ function openLightbox(imgSrc, data) {
   // Update navigation buttons
   updateNavigationButtons();
   
-  // Rest of the existing openLightbox code
   lightboxImg.src = imgSrc;
   lightboxDesc.innerHTML = data.description ? convertHashtagsToLinks(data.description) : '';
   lightboxAutor.textContent = data.author;
   
-  // Set download link
+  // Set download link  
   const downloadLink = document.getElementById('lightbox-download');
   downloadLink.href = imgSrc;
   downloadLink.download = data.path.split('/').pop();
   
-  // Format date nicely
-  const photoDate = new Date(data.date);
+  // Parse and format date properly
+  let photoDate;
+  try {
+    // Handle ISO string format from SQLite
+    photoDate = new Date(data.date.replace(' ', 'T')); // Convert SQLite datetime to ISO format
+    if (isNaN(photoDate.getTime())) { // If still invalid, try parsing parts
+      const [datePart, timePart] = data.date.split(' ');
+      const [year, month, day] = datePart.split('-');
+      const [hour, minute, second] = (timePart || '00:00:00').split(':');
+      photoDate = new Date(year, month - 1, day, hour || 0, minute || 0, second || 0);
+    }
+  } catch (e) {
+    console.error('Error parsing date:', data.date);
+    photoDate = new Date(); // Fallback to current date if parsing fails
+  }
+
   const formattedDate = window.innerWidth <= 640 
     ? photoDate.toLocaleString('es', {
         day: '2-digit',
@@ -556,7 +569,7 @@ initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1
                   <i class="fa-regular fa-user text-instagram-400 mr-2"></i>
                   ${data.author}
                 </div>
-                <div class="text-xs text-instagram-500">
+                <div class="text-xs text-instagram-500" data-original-date="${data.date}">
                   <i class="fa-regular fa-clock mr-1"></i>
                   ${window.innerWidth <= 640 
                     ? new Date(data.date).toLocaleString('es', {
