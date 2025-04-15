@@ -265,12 +265,7 @@ function openLightbox(imgSrc, data) {
       <a href="${telegramUrl}" target="_blank" class="text-instagram-500 hover:text-instagram-700">
         <i class="fa-brands fa-telegram mr-1"></i> Ver original
       </a>
-      <a href="https://creativecommons.org/licenses/by-sa/4.0/deed.es" target="_blank">
-        <i class="fa-brands fa-creative-commons mr-1"></i>
-        <i class="fa-brands fa-creative-commons-by mr-1"></i>
-        <i class="fa-brands fa-creative-commons-sa mr-1"></i>
-        CC BY-SA 4.0
-      </a>
+      <a href="https://creativecommons.org/licenses/by-sa/4.0/deed.es" target="_blank">CC BY-SA 4.0</a>
     </div>
   `;
   
@@ -280,9 +275,13 @@ function openLightbox(imgSrc, data) {
     sharePhoto(window.location.href, data.description);
   };
 
+  // Update chat and download links
+  const chatLink = document.getElementById('lightbox-chat');
+  chatLink.href = telegramUrl;
   const downloadButton = document.getElementById('lightbox-download');
   downloadButton.href = imgSrc;
-  
+  downloadButton.download = data.path.split('/').pop();
+
   lightbox.classList.add('active');
   document.body.style.overflow = 'hidden';
 }
@@ -468,7 +467,8 @@ initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1
       // Process data and group by date
       const grupos = rows.reduce((acc, row) => {
         const data = Object.fromEntries(cols.map((c, i) => [c, row[i]]));
-        data.path = getImagePath(data.path); // Update path to use /files/
+        const path = data.path;
+        data.path = getImagePath(path); // Update path to use /files/
         const fecha = data.fecha_grupo;
         if (!acc[fecha]) acc[fecha] = [];
         acc[fecha].push(data);
@@ -600,7 +600,7 @@ initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1
                     <i class="fa-solid fa-download"></i>
                   </a>
                   <a href="${telegramUrl}" target="_blank" class="text-instagram-500 hover:text-instagram-700" title="Ver original en Telegram">
-                    <i class="fa-brands fa-telegram"></i>
+                    <i class="fa-brands fa-comment"></i>
                   </a>
                 </div>
               </div>`;
