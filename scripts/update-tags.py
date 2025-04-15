@@ -36,7 +36,7 @@ def update_tags_cache():
         }
         
         # Write to JSON file
-        with open('tags-cache.json', 'w', encoding='utf-8') as f:
+        with open('../tags-cache.json', 'w', encoding='utf-8') as f:
             json.dump(cache_data, f, ensure_ascii=False, indent=2)
             
         print("Tags cache updated successfully")
