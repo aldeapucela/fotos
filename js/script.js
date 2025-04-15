@@ -265,7 +265,7 @@ function openLightbox(imgSrc, data) {
       <a href="${telegramUrl}" target="_blank" class="text-instagram-500 hover:text-instagram-700">
         <i class="fa-brands fa-telegram mr-1"></i> Ver original
       </a>
-      <a href="https://creativecommons.org/licenses/by-sa/4.0/deed.es" target="_blank">CC BY-SA 4.0</a>
+      <a class="text-instagram-500 hover:text-instagram-700" href="https://creativecommons.org/licenses/by-sa/4.0/deed.es" target="_blank">CC BY-SA 4.0</a>
     </div>
   `;
   
@@ -600,7 +600,7 @@ initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1
                     <i class="fa-solid fa-download"></i>
                   </a>
                   <a href="${telegramUrl}" target="_blank" class="text-instagram-500 hover:text-instagram-700" title="Ver original en Telegram">
-                    <i class="fa-brands fa-comment"></i>
+                    <i class="fa-regular fa-comment"></i>
                   </a>
                 </div>
               </div>`;
