@@ -721,3 +721,27 @@ document.addEventListener('click', (e) => {
     searchBar.classList.add('hidden');
   }
 });
+
+// Upload dialog functionality
+const uploadDialog = document.getElementById('uploadDialog');
+const uploadPhotoBtn = document.getElementById('uploadPhotoBtn');
+const closeUploadDialog = document.getElementById('closeUploadDialog');
+
+uploadPhotoBtn.addEventListener('click', (e) => {
+  e.preventDefault();
+  uploadDialog.classList.remove('hidden');
+  uploadDialog.classList.add('flex');
+});
+
+closeUploadDialog.addEventListener('click', () => {
+  uploadDialog.classList.remove('flex');
+  uploadDialog.classList.add('hidden');
+});
+
+// Close dialog when clicking outside
+uploadDialog.addEventListener('click', (e) => {
+  if (e.target === uploadDialog) {
+    uploadDialog.classList.remove('flex');
+    uploadDialog.classList.add('hidden');
+  }
+});
