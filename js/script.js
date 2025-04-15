@@ -159,6 +159,10 @@ const listViewBtn = document.getElementById('listViewBtn');
 const contenidoEl = document.getElementById('contenido');
 const searchInput = document.getElementById('searchInput');
 
+// Variables para la navegación de fotos
+let currentPhotoIndex = 0;
+let visiblePhotos = [];
+
 // Add search input event listener
 if (searchInput) {
   let searchTimeout;
@@ -191,6 +195,24 @@ listViewBtn.addEventListener('click', () => {
 
 // Open lightbox with photo details
 function openLightbox(imgSrc, data) {
+  // Get all visible photos for navigation
+  visiblePhotos = Array.from(document.querySelectorAll('.photo-card:not(.hidden)')).map(card => ({
+    path: card.querySelector('img').dataset.src,
+    data: {
+      description: card.dataset.description,
+      author: card.querySelector('.font-medium').textContent.trim(),
+      date: card.querySelector('.text-xs').textContent.trim(),
+      path: card.querySelector('img').dataset.src
+    }
+  }));
+  
+  // Find current photo index
+  currentPhotoIndex = visiblePhotos.findIndex(photo => photo.path === imgSrc);
+  
+  // Update navigation buttons
+  updateNavigationButtons();
+  
+  // Rest of the existing openLightbox code
   lightboxImg.src = imgSrc;
   lightboxDesc.innerHTML = data.description ? convertHashtagsToLinks(data.description) : '';
   lightboxAutor.textContent = data.author;
@@ -251,6 +273,105 @@ function openLightbox(imgSrc, data) {
   lightbox.classList.add('active');
   document.body.style.overflow = 'hidden';
 }
+
+// Update navigation buttons visibility
+function updateNavigationButtons() {
+  const prevButton = document.getElementById('prevPhoto');
+  const nextButton = document.getElementById('nextPhoto');
+  
+  prevButton.classList.toggle('hidden', currentPhotoIndex <= 0);
+  nextButton.classList.toggle('hidden', currentPhotoIndex >= visiblePhotos.length - 1);
+}
+
+// Navigate to previous photo
+function showPrevPhoto() {
+  if (currentPhotoIndex > 0) {
+    currentPhotoIndex--;
+    const photo = visiblePhotos[currentPhotoIndex];
+    openLightbox(photo.path, photo.data);
+  }
+}
+
+// Navigate to next photo
+function showNextPhoto() {
+  if (currentPhotoIndex < visiblePhotos.length - 1) {
+    currentPhotoIndex++;
+    const photo = visiblePhotos[currentPhotoIndex];
+    openLightbox(photo.path, photo.data);
+  }
+}
+
+// Add navigation event listeners
+document.getElementById('prevPhoto').addEventListener('click', (e) => {
+  e.stopPropagation();
+  showPrevPhoto();
+});
+
+document.getElementById('nextPhoto').addEventListener('click', (e) => {
+  e.stopPropagation();
+  showNextPhoto();
+});
+
+// Update keyboard navigation
+document.addEventListener('keydown', (e) => {
+  if (!lightbox.classList.contains('active')) return;
+  
+  switch (e.key) {
+    case 'ArrowLeft':
+      showPrevPhoto();
+      break;
+    case 'ArrowRight':
+      showNextPhoto();
+      break;
+    case 'Escape':
+      closeLightbox();
+      break;
+  }
+});
+
+// Handle touch gestures for navigation
+let startX;
+let startY;
+let isDragging = false;
+const MIN_SWIPE_DISTANCE = 50;
+
+lightbox.addEventListener('touchstart', (e) => {
+  startX = e.touches[0].clientX;
+  startY = e.touches[0].clientY;
+  isDragging = true;
+});
+
+lightbox.addEventListener('touchmove', (e) => {
+  if (!isDragging) return;
+  
+  const currentX = e.touches[0].clientX;
+  const currentY = e.touches[0].clientY;
+  const diffX = currentX - startX;
+  const diffY = currentY - startY;
+  
+  // Check if horizontal swipe
+  if (Math.abs(diffX) > Math.abs(diffY)) {
+    e.preventDefault(); // Prevent vertical scroll
+    
+    if (Math.abs(diffX) > MIN_SWIPE_DISTANCE) {
+      if (diffX > 0 && currentPhotoIndex > 0) {
+        showPrevPhoto();
+        isDragging = false;
+      } else if (diffX < 0 && currentPhotoIndex < visiblePhotos.length - 1) {
+        showNextPhoto();
+        isDragging = false;
+      }
+    }
+  } else if (Math.abs(diffY) > MIN_SWIPE_DISTANCE) {
+    // Vertical swipe - close lightbox
+    closeLightbox();
+    isDragging = false;
+  }
+});
+
+lightbox.addEventListener('touchend', () => {
+  isDragging = false;
+});
 
 // Close lightbox
 function closeLightbox() {
@@ -497,7 +618,6 @@ initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1
 });
 
 // Handle lightbox gestures
-let startY;
 lightbox.addEventListener('touchstart', (e) => {
   startY = e.touches[0].clientY;
 });

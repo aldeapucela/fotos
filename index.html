@@ -193,10 +193,20 @@
       </button>
       
       <!-- Photo container -->  
-      <div class="bg-black rounded-lg overflow-hidden">
-        <!-- Image -->  
-        <div class="relative">
-          <img id="lightbox-img" class="lightbox-img w-full max-h-[70vh] object-contain mx-auto" src="" alt="">
+      <div class="bg-black rounded-lg overflow-hidden relative">
+        <div class="relative max-w-full">
+          <!-- Navigation buttons -->
+          <button id="prevPhoto" class="fixed sm:absolute left-2 top-1/2 -translate-y-1/2 bg-black/40 text-white p-3 rounded-full md:opacity-75 hover:opacity-100 focus:opacity-100 z-10 hover:bg-black/60 transition-all">
+            <i class="fa-solid fa-chevron-left text-xl"></i>
+          </button>
+          <button id="nextPhoto" class="fixed sm:absolute right-2 top-1/2 -translate-y-1/2 bg-black/40 text-white p-3 rounded-full md:opacity-75 hover:opacity-100 focus:opacity-100 z-10 hover:bg-black/60 transition-all">
+            <i class="fa-solid fa-chevron-right text-xl"></i>
+          </button>
+          
+          <!-- Image -->  
+          <div class="relative">
+            <img id="lightbox-img" class="lightbox-img w-full max-h-[70vh] object-contain mx-auto" src="" alt="">
+          </div>
         </div>
         
         <!-- Photo info -->  
