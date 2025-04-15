@@ -195,6 +195,11 @@ listViewBtn.addEventListener('click', () => {
 
 // Open lightbox with photo details
 function openLightbox(imgSrc, data) {
+  // Reset zoom state
+  currentScale = 1;
+  lastScale = 1;
+  lightboxImg.style.transform = 'scale(1)';
+  
   // Get all visible photos for navigation
   visiblePhotos = Array.from(document.querySelectorAll('.photo-card:not(.hidden)')).map(card => ({
     path: card.querySelector('img').dataset.src,
@@ -349,45 +354,78 @@ let isDragging = false;
 const MIN_SWIPE_DISTANCE = 50;
 
 lightbox.addEventListener('touchstart', (e) => {
-  startX = e.touches[0].clientX;
-  startY = e.touches[0].clientY;
-  isDragging = true;
-});
-
-lightbox.addEventListener('touchmove', (e) => {
-  if (!isDragging) return;
-  
-  const currentX = e.touches[0].clientX;
-  const currentY = e.touches[0].clientY;
-  const diffX = currentX - startX;
-  const diffY = currentY - startY;
-  
-  // Check if horizontal swipe
-  if (Math.abs(diffX) > Math.abs(diffY)) {
-    e.preventDefault(); // Prevent vertical scroll
-    
-    if (Math.abs(diffX) > MIN_SWIPE_DISTANCE) {
-      if (diffX > 0 && currentPhotoIndex > 0) {
-        showPrevPhoto();
-        isDragging = false;
-      } else if (diffX < 0 && currentPhotoIndex < visiblePhotos.length - 1) {
-        showNextPhoto();
-        isDragging = false;
-      }
-    }
-  } else if (Math.abs(diffY) > MIN_SWIPE_DISTANCE) {
-    // Vertical swipe - close lightbox
-    closeLightbox();
-    isDragging = false;
+  if (e.touches.length === 2) {
+    e.preventDefault();
+    initialDistance = getDistance(e.touches[0], e.touches[1]);
+    lightboxImg.style.transition = 'none';
+  } else {
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    isDragging = true;
   }
 });
 
-lightbox.addEventListener('touchend', () => {
+lightbox.addEventListener('touchmove', (e) => {
+  if (e.touches.length === 2) {
+    e.preventDefault();
+    const currentDistance = getDistance(e.touches[0], e.touches[1]);
+    const scale = (currentDistance / initialDistance) * lastScale;
+    
+    // Limit scale between 1 and 4
+    currentScale = Math.min(Math.max(1, scale), 4);
+    lightboxImg.style.transform = `scale(${currentScale})`;
+  } else if (isDragging && currentScale === 1) {
+    // Only allow swipe navigation when not zoomed
+    const currentX = e.touches[0].clientX;
+    const currentY = e.touches[0].clientY;
+    const diffX = currentX - startX;
+    const diffY = currentY - startY;
+    
+    if (Math.abs(diffX) > Math.abs(diffY)) {
+      e.preventDefault();
+      
+      if (Math.abs(diffX) > MIN_SWIPE_DISTANCE) {
+        if (diffX > 0 && currentPhotoIndex > 0) {
+          showPrevPhoto();
+          isDragging = false;
+        } else if (diffX < 0 && currentPhotoIndex < visiblePhotos.length - 1) {
+          showNextPhoto();
+          isDragging = false;
+        }
+      }
+    } else if (Math.abs(diffY) > MIN_SWIPE_DISTANCE) {
+      closeLightbox();
+      isDragging = false;
+    }
+  }
+});
+
+lightbox.addEventListener('touchend', (e) => {
+  if (e.touches.length < 2) {
+    lastScale = currentScale;
+    lightboxImg.style.transition = 'transform 0.3s ease-out';
+    // Reset zoom if scale is close to 1
+    if (currentScale < 1.1) {
+      currentScale = 1;
+      lastScale = 1;
+      lightboxImg.style.transform = 'scale(1)';
+    }
+  }
   isDragging = false;
 });
 
+// Helper function to calculate distance between two touch points
+function getDistance(touch1, touch2) {
+  const dx = touch1.clientX - touch2.clientX;
+  const dy = touch1.clientY - touch2.clientY;
+  return Math.sqrt(dx * dx + dy * dy);
+}
+
 // Close lightbox
 function closeLightbox() {
+  currentScale = 1;
+  lastScale = 1;
+  lightboxImg.style.transform = 'scale(1)';
   lightbox.classList.remove('active');
   document.body.style.overflow = '';
   updateUrl('');
@@ -395,10 +433,6 @@ function closeLightbox() {
     lightboxImg.src = '';
   }, 300);
 }
-
-lightbox.addEventListener('click', (e) => {
-  if (e.target === lightbox) closeLightbox();
-});
 
 // Gestos táctiles para el lightbox
 // Touch gesture variables and handlers already defined below
@@ -758,3 +792,77 @@ uploadDialog.addEventListener('click', (e) => {
     uploadDialog.classList.add('hidden');
   }
 });
+
+// Variables for pinch-to-zoom
+let initialDistance = 0;
+let currentScale = 1;
+let lastScale = 1;
+
+// Add pinch gesture handling
+lightbox.addEventListener('touchstart', (e) => {
+  if (e.touches.length === 2) {
+    e.preventDefault();
+    initialDistance = getDistance(e.touches[0], e.touches[1]);
+    lightboxImg.style.transition = 'none';
+  } else {
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    isDragging = true;
+  }
+});
+
+lightbox.addEventListener('touchmove', (e) => {
+  if (e.touches.length === 2) {
+    e.preventDefault();
+    const currentDistance = getDistance(e.touches[0], e.touches[1]);
+    const scale = (currentDistance / initialDistance) * lastScale;
+    
+    // Limit scale between 1 and 4
+    currentScale = Math.min(Math.max(1, scale), 4);
+    lightboxImg.style.transform = `scale(${currentScale})`;
+  } else if (isDragging && currentScale === 1) {
+    // Only allow swipe navigation when not zoomed
+    const currentX = e.touches[0].clientX;
+    const currentY = e.touches[0].clientY;
+    const diffX = currentX - startX;
+    const diffY = currentY - startY;
+    
+    if (Math.abs(diffX) > Math.abs(diffY)) {
+      e.preventDefault();
+      
+      if (Math.abs(diffX) > MIN_SWIPE_DISTANCE) {
+        if (diffX > 0 && currentPhotoIndex > 0) {
+          showPrevPhoto();
+          isDragging = false;
+        } else if (diffX < 0 && currentPhotoIndex < visiblePhotos.length - 1) {
+          showNextPhoto();
+          isDragging = false;
+        }
+      }
+    } else if (Math.abs(diffY) > MIN_SWIPE_DISTANCE) {
+      closeLightbox();
+      isDragging = false;
+    }
+  }
+});
+
+lightbox.addEventListener('touchend', (e) => {
+  if (e.touches.length < 2) {
+    lastScale = currentScale;
+    lightboxImg.style.transition = 'transform 0.3s ease-out';
+    // Reset zoom if scale is close to 1
+    if (currentScale < 1.1) {
+      currentScale = 1;
+      lastScale = 1;
+      lightboxImg.style.transform = 'scale(1)';
+    }
+  }
+  isDragging = false;
+});
+
+// Helper function to calculate distance between two touch points
+function getDistance(touch1, touch2) {
+  const dx = touch1.clientX - touch2.clientX;
+  const dy = touch1.clientY - touch2.clientY;
+  return Math.sqrt(dx * dx + dy * dy);
+}
