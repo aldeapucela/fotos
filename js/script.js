@@ -198,15 +198,22 @@ listViewBtn.addEventListener('click', () => {
 // Open lightbox with photo details
 function openLightbox(imgSrc, data) {
   // Get all visible photos for navigation
-  visiblePhotos = Array.from(document.querySelectorAll('.photo-card:not(.hidden)')).map(card => ({
-    path: card.querySelector('img').dataset.src,
-    data: {
-      description: card.dataset.description,
-      author: card.querySelector('.font-medium').textContent.trim(),
-      date: card.querySelector('.text-xs').dataset.originalDate, // Use original date from data attribute
-      path: card.querySelector('img').dataset.src
-    }
-  }));
+  visiblePhotos = Array.from(document.querySelectorAll('.photo-card:not(.hidden)')).map(card => {
+    // Check if the photo is appropriate
+    const isAppropriate = !card.querySelector('[data-inappropriate="true"]');
+    const imgElement = card.querySelector('img');
+    
+    return {
+      path: isAppropriate && imgElement ? imgElement.dataset.src : '',
+      data: {
+        description: card.dataset.description,
+        author: card.querySelector('.font-medium a')?.textContent?.trim() || card.querySelector('.font-medium')?.textContent?.trim(),
+        date: card.querySelector('.text-xs')?.dataset?.originalDate,
+        path: isAppropriate && imgElement ? imgElement.dataset.src : '',
+        is_appropriate: isAppropriate
+      }
+    };
+  }).filter(photo => photo.data !== null);
   
   // Find current photo index
   currentPhotoIndex = visiblePhotos.findIndex(photo => photo.path === imgSrc);
@@ -214,11 +221,28 @@ function openLightbox(imgSrc, data) {
   // Update navigation buttons
   updateNavigationButtons();
   
-  lightboxImg.src = imgSrc;
+  // Only proceed with lightbox
+  const lightboxContent = document.querySelector('.lightbox-content');
+  if (data.is_appropriate !== 0) {
+    lightboxImg.src = imgSrc;
+    lightboxImg.style.display = 'block';
+    document.querySelector('.inappropriate-content')?.remove();
+  } else {
+    // Show inappropriate content message
+    lightboxImg.style.display = 'none';
+    const inappropriateDiv = document.querySelector('.inappropriate-content') || document.createElement('div');
+    inappropriateDiv.className = 'inappropriate-content flex flex-col items-center justify-center text-center p-4 bg-instagram-200 dark:bg-instagram-700';
+    inappropriateDiv.innerHTML = `
+      <i class="fa-solid fa-eye-slash text-3xl mb-2 text-instagram-500"></i>
+      <p class="text-sm text-instagram-500">Foto oculta porque puede tener contenido no adecuado</p>
+    `;
+    lightboxContent.insertBefore(inappropriateDiv, lightboxImg);
+  }
+
   lightboxDesc.innerHTML = data.description ? convertHashtagsToLinks(data.description) : '';
 
   // Create Telegram URL
-  const filename = data.path.split('/').pop();
+  const filename = data.path?.split('/').pop() || '';
   const telegramId = filename.replace('.jpg', '').replace('.png', '').replace('.jpeg', '');
   const telegramUrl = `https://t.me/AldeaPucela/27202/${telegramId}`;
   updateUrl(telegramId);
@@ -232,8 +256,13 @@ function openLightbox(imgSrc, data) {
   
   // Set download link  
   const downloadLink = document.getElementById('lightbox-download');
-  downloadLink.href = imgSrc;
-  downloadLink.download = data.path.split('/').pop();
+  if (data.is_appropriate !== 0 && data.path) {
+    downloadLink.href = imgSrc;
+    downloadLink.download = data.path.split('/').pop();
+    downloadLink.style.display = 'inline-block';
+  } else {
+    downloadLink.style.display = 'none';
+  }
   
   // Parse and format date properly
   let photoDate;
@@ -284,8 +313,13 @@ function openLightbox(imgSrc, data) {
   const chatLink = document.getElementById('lightbox-chat');
   chatLink.href = telegramUrl;
   const downloadButton = document.getElementById('lightbox-download');
-  downloadButton.href = imgSrc;
-  downloadButton.download = data.path.split('/').pop();
+  if (data.is_appropriate !== 0 && data.path) {
+    downloadButton.href = imgSrc;
+    downloadButton.download = data.path.split('/').pop();
+    downloadButton.style.display = 'inline-block';
+  } else {
+    downloadButton.style.display = 'none';
+  }
 
   lightbox.classList.add('active');
   document.body.style.overflow = 'hidden';
@@ -451,7 +485,12 @@ initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1
     });
 
     // Continue with existing query for photos
-    const res = db.exec("SELECT *, date(date) as fecha_grupo FROM imagenes ORDER BY date DESC");
+    const res = db.exec(`
+      SELECT i.*, date(i.date) as fecha_grupo, ia.is_appropriate 
+      FROM imagenes i 
+      LEFT JOIN image_analysis ia ON i.id = ia.image_id 
+      ORDER BY i.date DESC
+    `);
     
     const contenido = document.getElementById('contenido');
     contenido.innerHTML = '';
@@ -516,8 +555,10 @@ initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1
         entries.forEach(entry => {
           if (entry.isIntersecting) {
             const img = entry.target;
-            img.src = img.dataset.src;
-            img.onload = () => img.classList.add('opacity-100');
+            if (!img.dataset.inappropriate) {
+              img.src = img.dataset.src;
+              img.onload = () => img.classList.add('opacity-100');
+            }
             observer.unobserve(img);
           }
         });
@@ -549,7 +590,7 @@ initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1
         // Create photo cards
         fotos.forEach(data => {
           const item = document.createElement('div');
-          item.className = 'photo-card bg-white dark:bg-instagram-800 rounded-sm shadow-sm overflow-hidden transform transition-transform hover:shadow-md active:scale-[0.98] cursor-pointer';
+          item.className = 'photo-card bg-white dark:bg-instagram-800 rounded-sm shadow-sm overflow-hidden transform transition-transform hover:shadow-md active:scale-[0.98]';
           
           // Extract filename to create Telegram link
           const filename = data.path;
@@ -563,21 +604,41 @@ initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1
           const fullPath = getImagePath(data.path);
           data.path = fullPath;
           
-          item.onclick = () => openLightbox(fullPath, data);
+          // Check if image is appropriate (check specifically for 0)
+          const isAppropriate = data.is_appropriate !== 0;
+          
+          // Only add click handler if the image is appropriate
+          if (isAppropriate) {
+            item.onclick = () => openLightbox(fullPath, data);
+            item.classList.add('cursor-pointer');
+          } else {
+            item.style.cursor = 'not-allowed';
+          }
           
           const telegramUrl = `https://t.me/AldeaPucela/27202/${telegramId}`;
           
           // Store photo data if it matches URL
-          if (photoIdFromUrl === telegramId) {
+          if (photoIdFromUrl === telegramId && isAppropriate) {
             photoToOpen = { path: fullPath, data };
           }
 
-          // Simple grid photo layout with details only shown in list view
-          item.innerHTML = `
+          // Create photo card HTML
+          const photoCardHtml = isAppropriate ? `
             <div class="photo-card-image relative pb-[100%] bg-instagram-100 dark:bg-instagram-700">
               <img data-src="${fullPath}" alt="${data.description || ''}" 
                    class="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-300">
             </div>
+          ` : `
+            <div class="photo-card-image relative pb-[100%] bg-instagram-100 dark:bg-instagram-700">
+              <div class="absolute inset-0 w-full h-full flex flex-col items-center justify-center text-center p-4 bg-instagram-200 dark:bg-instagram-700">
+                <i class="fa-solid fa-eye-slash text-3xl mb-2 text-instagram-500"></i>
+                <p class="text-sm text-instagram-500">Foto oculta porque puede tener contenido no adecuado</p>
+              </div>
+            </div>
+          `;
+
+          item.innerHTML = `
+            ${photoCardHtml}
             <div class="photo-details p-3">
               <div class="flex items-center justify-between mb-2">
                 <div class="font-medium text-sm flex items-center">
@@ -609,20 +670,31 @@ initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1
                           title="Compartir">
                     <i class="fa-solid fa-share-nodes"></i>
                   </button>
-                  <a href="${fullPath}" download class="text-instagram-500 hover:text-instagram-700 mr-3" title="Descargar foto">
-                    <i class="fa-solid fa-download"></i>
-                  </a>
+                  ${isAppropriate ? `
+                    <a href="${fullPath}" download class="text-instagram-500 hover:text-instagram-700 mr-3" title="Descargar foto">
+                      <i class="fa-solid fa-download"></i>
+                    </a>
+                  ` : ''}
                   <a href="${telegramUrl}" target="_blank" class="text-instagram-500 hover:text-instagram-700" title="Comentar en Telegram">
                     <i class="fa-regular fa-comment"></i>
                   </a>
                 </div>
                 <a class="text-xs text-instagram-400 hover:text-instagram-700" href="https://creativecommons.org/licenses/by-sa/4.0/deed.es" target="_blank">CC BY-SA 4.0</a>
-              </div>
-            </div>`;
+              </div>`;
+
+          // If image is inappropriate, mark it
+          if (!isAppropriate) {
+            const img = item.querySelector('img');
+            if (img) {
+              img.dataset.inappropriate = 'true';
+            }
+          }
 
           // Observe image for lazy loading
           const img = item.querySelector('img');
-          imageObserver.observe(img);
+          if (img && isAppropriate) {
+            imageObserver.observe(img);
+          }
           
           grid.appendChild(item);
         });

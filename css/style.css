@@ -7,6 +7,25 @@ body {
     aspect-ratio: 1/1;
   }
 
+  .photo-card-image img {
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .photo-card-image img.opacity-100 {
+    opacity: 1;
+  }
+
+  .photo-card-image .fa-eye-slash {
+    opacity: 0.5;
+  }
+
+  .photo-card-image p {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    opacity: 0.75;
+  }
+
   .card img.loaded {
     opacity: 1;
   }
