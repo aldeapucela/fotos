@@ -544,7 +544,7 @@ initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1
         
         // Photo grid
         const grid = document.createElement('div');
-        grid.className = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-4 px-2';
+        grid.className = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-1 sm:gap-1 px-2';
 
         // Create photo cards
         fotos.forEach(data => {
