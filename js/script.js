@@ -214,7 +214,19 @@ function openLightbox(imgSrc, data) {
   
   lightboxImg.src = imgSrc;
   lightboxDesc.innerHTML = data.description ? convertHashtagsToLinks(data.description) : '';
-  lightboxAutor.textContent = data.author;
+
+  // Create Telegram URL
+  const filename = data.path.split('/').pop();
+  const telegramId = filename.replace('.jpg', '').replace('.png', '').replace('.jpeg', '');
+  const telegramUrl = `https://t.me/AldeaPucela/27202/${telegramId}`;
+  updateUrl(telegramId);
+  
+  // Set author name with link to Telegram
+  const lightboxAutorDiv = document.getElementById('lightbox-autor');
+  lightboxAutorDiv.innerHTML = `
+    <i class="fa-regular fa-user mr-2"></i>
+    <a href="${telegramUrl}" target="_blank" class="hover:text-instagram-700">${data.author}</a>
+  `;
   
   // Set download link  
   const downloadLink = document.getElementById('lightbox-download');
@@ -254,19 +266,10 @@ function openLightbox(imgSrc, data) {
       });
   
   lightboxFecha.textContent = formattedDate;
-  const filename = data.path.split('/').pop();
-  const telegramId = filename.replace('.jpg', '').replace('.png', '').replace('.jpeg', '');
-  const telegramUrl = `https://t.me/AldeaPucela/27202/${telegramId}`;
-  updateUrl(telegramId);
   
-  // Add license with link and Telegram original link
+  // Add license without "Ver original" link
   lightboxLicense.innerHTML = `
-    <div class="flex justify-between items-center">
-      <a href="${telegramUrl}" target="_blank" class="text-instagram-500 hover:text-instagram-700">
-        <i class="fa-brands fa-telegram mr-1"></i> Ver original
-      </a>
-      <a class="text-instagram-500 hover:text-instagram-700" href="https://creativecommons.org/licenses/by-sa/4.0/deed.es" target="_blank">CC BY-SA 4.0</a>
-    </div>
+    <a class="text-instagram-500 hover:text-instagram-700" href="https://creativecommons.org/licenses/by-sa/4.0/deed.es" target="_blank">CC BY-SA 4.0</a>
   `;
   
   const shareButton = document.getElementById('lightbox-share');
@@ -569,7 +572,7 @@ initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1
               <div class="flex items-center justify-between mb-2">
                 <div class="font-medium text-sm flex items-center">
                   <i class="fa-regular fa-user text-instagram-400 mr-2"></i>
-                  ${data.author}
+                  <a href="${telegramUrl}" target="_blank" class="hover:text-instagram-700">${data.author}</a>
                 </div>
                 <div class="text-xs text-instagram-500" data-original-date="${data.date}">
                   <i class="fa-regular fa-clock mr-1"></i>
@@ -599,11 +602,13 @@ initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1
                   <a href="${data.path}" download class="text-instagram-500 hover:text-instagram-700 mr-3" title="Descargar foto">
                     <i class="fa-solid fa-download"></i>
                   </a>
-                  <a href="${telegramUrl}" target="_blank" class="text-instagram-500 hover:text-instagram-700" title="Ver original en Telegram">
+                  <a href="${telegramUrl}" target="_blank" class="text-instagram-500 hover:text-instagram-700" title="Comentar en Telegram">
                     <i class="fa-regular fa-comment"></i>
                   </a>
                 </div>
-              </div>`;
+                <a class="text-xs text-instagram-400 hover:text-instagram-700" href="https://creativecommons.org/licenses/by-sa/4.0/deed.es" target="_blank">CC BY-SA 4.0</a>
+              </div>
+            </div>`;
 
           // Observe image for lazy loading
           const img = item.querySelector('img');
