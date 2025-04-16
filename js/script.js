@@ -5,11 +5,13 @@ function getPhotoIdFromUrl() {
 }
 
 function updateUrl(photoId) {
+    const url = new URL(window.location);
     if (photoId) {
-        window.history.pushState(null, '', `#${photoId}`);
+        url.hash = photoId;
     } else {
-        window.history.pushState(null, '', window.location.pathname);
+        url.hash = '';
     }
+    window.history.pushState(null, '', url);
 }
 
 // Search photos by text
@@ -275,7 +277,7 @@ function openLightbox(imgSrc, data) {
   const shareButton = document.getElementById('lightbox-share');
   shareButton.onclick = (e) => {
     e.stopPropagation();
-    sharePhoto(window.location.href, data.description);
+    sharePhoto(telegramId, data.description);
   };
 
   // Update chat and download links
@@ -469,9 +471,7 @@ initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1
       
       // Process data and group by date
       const grupos = rows.reduce((acc, row) => {
-        const data = Object.fromEntries(cols.map((c, i) => [c, row[i]]));
-        const path = data.path;
-        data.path = getImagePath(path); // Update path to use /files/
+        const data = Object.fromEntries(cols.map((col, i) => [col, row[i]]));
         const fecha = data.fecha_grupo;
         if (!acc[fecha]) acc[fecha] = [];
         acc[fecha].push(data);
@@ -525,6 +525,7 @@ initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1
         rootMargin: '100px 0px',
         threshold: 0.1
       });
+
       // Render photo groups by date
       Object.entries(grupos).forEach(([fecha, fotos]) => {
         const grupo = document.createElement('div');
@@ -549,23 +550,32 @@ initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1
         fotos.forEach(data => {
           const item = document.createElement('div');
           item.className = 'photo-card bg-white dark:bg-instagram-800 rounded-lg shadow-sm overflow-hidden transform transition-transform hover:shadow-md active:scale-[0.98] cursor-pointer';
-          item.onclick = () => openLightbox(data.path, data);
-          item.dataset.description = data.description || '';
           
           // Extract filename to create Telegram link
-          const filename = data.path.split('/').pop();
+          const filename = data.path;
           const telegramId = filename.replace('.jpg', '').replace('.png', '').replace('.jpeg', '');
+          
+          // Add dataset attributes for finding photos by ID
+          item.dataset.photoId = telegramId;
+          item.dataset.description = data.description || '';
+          
+          // Update the path to point to files directory
+          const fullPath = getImagePath(data.path);
+          data.path = fullPath;
+          
+          item.onclick = () => openLightbox(fullPath, data);
+          
           const telegramUrl = `https://t.me/AldeaPucela/27202/${telegramId}`;
           
           // Store photo data if it matches URL
           if (photoIdFromUrl === telegramId) {
-            photoToOpen = { path: data.path, data };
+            photoToOpen = { path: fullPath, data };
           }
 
           // Simple grid photo layout with details only shown in list view
           item.innerHTML = `
             <div class="photo-card-image relative pb-[100%] bg-instagram-100 dark:bg-instagram-700">
-              <img data-src="${data.path}" alt="${data.description || ''}" 
+              <img data-src="${fullPath}" alt="${data.description || ''}" 
                    class="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-300">
             </div>
             <div class="photo-details p-3">
@@ -595,11 +605,11 @@ initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1
               <div class="mt-2 flex justify-between items-center text-instagram-400 text-lg">
                 <div class="actions" onclick="event.stopPropagation()">
                   <button type="button" class="share-button hover:text-instagram-600 mr-3" 
-                          onclick="sharePhoto('${window.location.origin}${window.location.pathname}#${telegramId}')" 
+                          onclick="sharePhoto('${telegramId}', '${data.description?.replace(/'/g, "\\'")}')" 
                           title="Compartir">
                     <i class="fa-solid fa-share-nodes"></i>
                   </button>
-                  <a href="${data.path}" download class="text-instagram-500 hover:text-instagram-700 mr-3" title="Descargar foto">
+                  <a href="${fullPath}" download class="text-instagram-500 hover:text-instagram-700 mr-3" title="Descargar foto">
                     <i class="fa-solid fa-download"></i>
                   </a>
                   <a href="${telegramUrl}" target="_blank" class="text-instagram-500 hover:text-instagram-700" title="Comentar en Telegram">
@@ -622,12 +632,28 @@ initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1
         contenido.appendChild(grupo);
       });
 
-      // Open photo if direct URL was used
+      // Check URL parameters and handle based on order:
+      // 1. First apply tag filter if present
+      const tagParam = urlParams.get('tag');
+      if (tagParam) {
+        filterByTag(new Event('click'), tagParam);
+      }
+      
+      // 2. Then check search param
+      const searchParam = urlParams.get('search');
+      if (searchParam) {
+        searchInput.value = searchParam;
+        searchPhotos(searchParam);
+      }
+      
+      // 3. Finally, open photo if direct URL was used 
       if (photoToOpen) {
+        // Small delay to ensure filters are applied first
         setTimeout(() => {
           openLightbox(photoToOpen.path, photoToOpen.data);
         }, 100);
       }
+
     } else {
       contenido.innerHTML = '<div class="text-center py-20 text-instagram-500">No hay fotos para mostrar</div>';
     }
@@ -710,7 +736,8 @@ function shareGeneral() {
     }
 
 // Add share functionality
-function sharePhoto(url, description = '') {
+function sharePhoto(photoId, description = '') {
+  const url = `${window.location.origin}${window.location.pathname}#${photoId}`;
   const shareText = description 
     ? `Mira esta foto de Valladolid de Aldea Pucela\n\n"${description}"\n\n`
     : `Mira esta foto de Valladolid de Aldea Pucela\n\n`;
@@ -792,4 +819,32 @@ uploadDialog.addEventListener('click', (e) => {
     uploadDialog.classList.remove('flex');
     uploadDialog.classList.add('hidden');
   }
+});
+
+// On page load, check both tag and photo ID
+window.addEventListener('load', () => {
+    const tagParam = urlParams.get('tag');
+    const photoIdFromUrl = getPhotoIdFromUrl();
+    
+    // Apply tag filter first if present
+    if (tagParam) {
+        filterByTag(new Event('click'), tagParam);
+    }
+    
+    // Then wait a bit for photos to load and open lightbox if needed
+    if (photoIdFromUrl) {
+        setTimeout(() => {
+            const photoCard = document.querySelector(`[data-photo-id="${photoIdFromUrl}"]`);
+            if (photoCard) {
+                const imgSrc = photoCard.querySelector('img').dataset.src;
+                const data = {
+                    description: photoCard.dataset.description,
+                    author: photoCard.querySelector('.font-medium').textContent.trim(),
+                    date: photoCard.querySelector('.text-xs').dataset.originalDate,
+                    path: imgSrc
+                };
+                openLightbox(imgSrc, data);
+            }
+        }, 500);
+    }
 });
