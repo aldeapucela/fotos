@@ -762,7 +762,7 @@ function shareTagCollection() {
   if (!tag) return;
   
   const url = `${window.location.origin}${window.location.pathname}?tag=${tag}`;
-  const shareText = `Mira esta colección de fotos de Valladolid con #${tag} en Aldea Pucela\n\n`;
+  const shareText = `Mira esta colección de fotos de Valladolid de #${tag} en Aldea Pucela\n\n`;
 
   if (navigator.share) {
     navigator.share({
