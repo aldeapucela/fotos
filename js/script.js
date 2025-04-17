@@ -34,7 +34,14 @@ function searchPhotos(text) {
     let hasVisiblePhotos = false;
     group.querySelectorAll('.photo-card').forEach(card => {
       const description = (card.dataset.description || '').toLowerCase();
-      if (description.includes(searchTerm)) {
+      const imgElement = card.querySelector('img');
+      const aiDescription = imgElement ? imgElement.alt.toLowerCase() : '';
+      const aiTags = card.dataset.aiTags ? JSON.parse(card.dataset.aiTags) : [];
+      
+      // Search in normal description, AI description and AI tags
+      if (description.includes(searchTerm) || 
+          aiDescription.includes(searchTerm) || 
+          aiTags.some(tag => tag.toLowerCase().includes(searchTerm))) {
         card.classList.remove('hidden');
         hasVisiblePhotos = true;
         foundPhotos = true;
@@ -137,6 +144,7 @@ function filterByTag(event, tag) {
 function clearTagFilter() {
   const url = new URL(window.location);
   url.searchParams.delete('tag');
+  url.searchParams.delete('element');  // Also clear element parameter
   window.history.pushState({}, '', url);
   
   document.querySelectorAll('.date-group, .photo-card').forEach(el => {
@@ -146,6 +154,51 @@ function clearTagFilter() {
   // Hide tag filter indicator and title
   document.getElementById('tagFilter').classList.add('hidden');
   document.getElementById('tagTitle').classList.add('hidden');
+}
+
+// Filter photos by AI-detected element
+function filterByElement(element) {
+  // Close lightbox if open
+  closeLightbox();
+  
+  // Update URL and title
+  const url = new URL(window.location);
+  url.searchParams.set('element', element);
+  window.history.pushState({}, '', url);
+  
+  // Show element filter UI
+  const tagTitle = document.getElementById('tagTitle');
+  tagTitle.querySelector('span').textContent = element;
+  tagTitle.classList.remove('hidden');
+  
+  // Filter visible photos and check if any found
+  let foundPhotos = false;
+  document.querySelectorAll('.date-group').forEach(group => {
+    let hasVisiblePhotos = false;
+    group.querySelectorAll('.photo-card').forEach(card => {
+      const aiTags = card.dataset.aiTags ? JSON.parse(card.dataset.aiTags) : [];
+      if (aiTags.some(tag => tag.toLowerCase() === element.toLowerCase())) {
+        card.classList.remove('hidden');
+        hasVisiblePhotos = true;
+        foundPhotos = true;
+      } else {
+        card.classList.add('hidden');
+      }
+    });
+    group.classList.toggle('hidden', !hasVisiblePhotos);
+  });
+
+  // Show no results message if no photos found
+  const contenido = document.getElementById('contenido');
+  if (!foundPhotos) {
+    contenido.innerHTML = `<div class="text-center py-20 text-instagram-500">No hay fotos que contengan el elemento "${element}"</div>`;
+  }
+
+  // Show element filter indicator
+  const tagFilter = document.getElementById('tagFilter');
+  const tagName = document.getElementById('tagName');
+  tagName.textContent = element;
+  tagFilter.classList.remove('hidden');
 }
 
 // DOM Elements
@@ -209,6 +262,7 @@ function openLightbox(imgSrc, data) {
       path: isAppropriate && imgElement ? imgElement.dataset.src : '',
       data: {
         description: card.dataset.description,
+        ai_description: imgElement ? imgElement.alt : '',
         author: card.querySelector('.font-medium a')?.textContent?.trim() || card.querySelector('.font-medium')?.textContent?.trim(),
         date: card.querySelector('.text-xs')?.dataset?.originalDate,
         path: isAppropriate && imgElement ? imgElement.dataset.src : '',
@@ -227,6 +281,7 @@ function openLightbox(imgSrc, data) {
   const lightboxContent = document.querySelector('.lightbox-content');
   if (data.is_appropriate !== 0) {
     lightboxImg.src = imgSrc;
+    lightboxImg.alt = data.ai_description || data.description || '';
     lightboxImg.style.display = 'block';
     document.querySelector('.inappropriate-content')?.remove();
   } else {
@@ -488,7 +543,10 @@ initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1
 
     // Continue with existing query for photos
     const res = db.exec(`
-      SELECT i.*, date(i.date) as fecha_grupo, ia.is_appropriate 
+      SELECT i.*, date(i.date) as fecha_grupo, 
+             ia.is_appropriate, 
+             ia.description as ai_description,
+             ia.tags as ai_tags 
       FROM imagenes i 
       LEFT JOIN image_analysis ia ON i.id = ia.image_id 
       ORDER BY i.date DESC
@@ -601,6 +659,7 @@ initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1
           // Add dataset attributes for finding photos by ID
           item.dataset.photoId = telegramId;
           item.dataset.description = data.description || '';
+          item.dataset.aiTags = data.ai_tags || '[]';
           
           // Update the path to point to files directory
           const fullPath = getImagePath(data.path);
@@ -627,7 +686,7 @@ initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1
           // Create photo card HTML
           const photoCardHtml = isAppropriate ? `
             <div class="photo-card-image relative pb-[100%] bg-instagram-100 dark:bg-instagram-700">
-              <img data-src="${fullPath}" alt="${data.description || ''}" 
+              <img data-src="${fullPath}" alt="${data.ai_description || data.description || ''}" 
                    class="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-300">
             </div>
           ` : `
@@ -707,9 +766,12 @@ initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1
       });
 
       // Check URL parameters and handle based on order:
-      // 1. First apply tag filter if present
+      // 1. First apply tag or element filter if present
       const tagParam = urlParams.get('tag');
-      if (tagParam) {
+      const elementParam = urlParams.get('element');
+      if (elementParam) {
+        filterByElement(elementParam);
+      } else if (tagParam) {
         filterByTag(new Event('click'), tagParam);
       }
       
@@ -833,15 +895,26 @@ function sharePhoto(photoId, description = '') {
 // Add share functionality for tag collection
 function shareTagCollection() {
   const tag = new URLSearchParams(window.location.search).get('tag');
-  if (!tag) return;
+  const element = new URLSearchParams(window.location.search).get('element');
   
-  const url = `${window.location.origin}${window.location.pathname}?tag=${tag}`;
-  const shareText = `Mira esta colección de fotos de Valladolid de #${tag} en Aldea Pucela\n\n`;
+  if (!tag && !element) return;
+  
+  let url, shareText, title;
+  
+  if (tag) {
+    url = `${window.location.origin}${window.location.pathname}?tag=${tag}`;
+    shareText = `Mira esta colección de fotos de Valladolid con #${tag} en Aldea Pucela\n\n`;
+    title = `Fotos con #${tag} - Aldea Pucela`;
+  } else {
+    url = `${window.location.origin}${window.location.pathname}?element=${element}`;
+    shareText = `Mira esta colección de fotos de Valladolid que contienen "${element}" en Aldea Pucela\n\n`;
+    title = `Fotos que contienen ${element} - Aldea Pucela`;
+  }
 
   if (navigator.share) {
     navigator.share({
       url: url,
-      title: `Fotos con #${tag} - Aldea Pucela`,
+      title: title,
       text: shareText
     }).catch(console.error);
   } else {
@@ -898,10 +971,13 @@ uploadDialog.addEventListener('click', (e) => {
 // On page load, check both tag and photo ID
 window.addEventListener('load', () => {
     const tagParam = urlParams.get('tag');
+    const elementParam = urlParams.get('element');
     const photoIdFromUrl = getPhotoIdFromUrl();
     
-    // Apply tag filter first if present
-    if (tagParam) {
+    // Apply tag or element filter first if present
+    if (elementParam) {
+        filterByElement(elementParam);
+    } else if (tagParam) {
         filterByTag(new Event('click'), tagParam);
     }
     

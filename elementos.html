@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" type="image/jpeg" href="https://aldeapucela.org/img/favicon.png">
-  <title>Etiquetas - Fotos de Valladolid - Aldea Pucela</title>
+  <title>Elementos detectados - Fotos de Valladolid - Aldea Pucela</title>
   <link rel="alternate" type="application/rss+xml" title="Fotos de Valladolid - Aldea Pucela" href="/feed.xml" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
   <script src="https://cdn.tailwindcss.com"></script>
@@ -49,12 +49,12 @@
       pointer-events: none;
     }
 
-    .tag-card {
+    .element-card {
       display: block;
       height: fit-content;
     }
 
-    .tag-card:hover .photo-collage img {
+    .element-card:hover .photo-collage img {
       opacity: 0.8;
     }
   </style>
@@ -67,7 +67,8 @@
           <i class="fa-solid fa-house"></i>
         </a>
         <div class="flex-1">
-          <h1 class="text-xl font-semibold">Etiquetas populares</h1>
+          <h1 class="text-xl font-semibold">Elementos detectados</h1>
+          <p class="text-sm text-instagram-500">Elementos identificados por IA en las fotos</p>
           <a href="/" class="text-sm text-instagram-500 hover:text-instagram-600">
             <i class="fa-solid fa-arrow-left"></i>
             Volver a la galería
@@ -78,22 +79,22 @@
   </header>
 
   <main class="container mx-auto px-4 py-8">
-    <div id="tags-list" class="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-      <!-- Tags will be loaded here -->
+    <div id="elements-list" class="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+      <!-- Elements will be loaded here -->
     </div>
   </main>
 
   <script>
-    async function loadTags() {
+    async function loadElements() {
       try {
-        const response = await fetch('tags-cache.json');
+        const response = await fetch('ai-tags-cache.json');
         const data = await response.json();
-        const tagsList = document.getElementById('tags-list');
+        const elementsList = document.getElementById('elements-list');
         
         data.tags.forEach(({tag, count, latest_photos}) => {
-          const tagEl = document.createElement('a');
-          tagEl.href = `/?tag=${tag.substring(1)}`;
-          tagEl.className = 'tag-card bg-white dark:bg-instagram-800 rounded-lg shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5';
+          const elementEl = document.createElement('a');
+          elementEl.href = `/?element=${encodeURIComponent(tag)}`;
+          elementEl.className = 'element-card bg-white dark:bg-instagram-800 rounded-lg shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5';
           
           // Create photo collage with smaller images
           const photoCollage = latest_photos.length > 0 
@@ -106,7 +107,7 @@
                </div>`
             : '';
             
-          tagEl.innerHTML = `
+          elementEl.innerHTML = `
             <div class="p-3">
               <div class="flex items-center justify-between">
                 <div>
@@ -118,14 +119,14 @@
             </div>
             ${photoCollage}
           `;
-          tagsList.appendChild(tagEl);
+          elementsList.appendChild(elementEl);
         });
       } catch (error) {
-        console.error('Error loading tags:', error);
+        console.error('Error loading elements:', error);
       }
     }
 
-    loadTags();
+    loadElements();
   </script>
   <!-- Load Matomo Analytics -->
   <script>
