@@ -11,10 +11,12 @@ aldeapucela/fotos/
 │   ├── borrar-foto.py
 │   ├── feed-rss.py   # Generador del feed RSS
 │   └── update-tags.py
+│   └── update-ai-tags.py
 ├── fotos.db          # Base de datos SQLite
 ├── fotos.db.sample   # Plantilla de la base de datos
 ├── feed.xml          # Feed RSS con las últimas 100 fotos
 ├── tags-cache.json   # Caché de etiquetas
+├── ai-tags-cache.json # Caché de etiquetas generadas por IA
 ├── index.html        # Galería principal
 └── etiquetas.html    # Vista de etiquetas
 ```
@@ -91,7 +93,16 @@ python3 ./scripts/update-tags.py
 - Genera tags-cache.json con conteo de hashtags
 - Necesario cada vez que se modifican descripciones
 
-Recomendable ejecutar al menos cada hora en un cron.
+### Actualizar tags de IA
+```bash
+python3 ./scripts/update-ai-tags.py
+```
+- Analiza las etiquetas generadas por IA en la tabla image_analysis
+- Genera ai-tags-cache.json con conteo de etiquetas
+- Solo incluye etiquetas de imágenes marcadas como apropiadas
+- Necesario ejecutar después de añadir nuevas fotos o actualizar análisis de IA
+
+Recomendable ejecutar ambos scripts al menos cada hora en un cron.
 
 ## Cache de etiquetas
 
@@ -107,11 +118,27 @@ El archivo `tags-cache.json` mantiene un conteo de hashtags:
 }
 ```
 
+El archivo `ai-tags-cache.json` mantiene un conteo similar para las etiquetas generadas por IA:
+
+```json
+{
+  "lastUpdate": "2024-01-01T12:00:00",
+  "tags": [
+    {
+      "tag": "building",
+      "count": 42,
+      "latest_photos": ["foto1.jpg", "foto2.jpg", "foto3.jpg", "foto4.jpg"]
+    }
+  ]
+}
+```
+
 ## Despliegue
 
 1. Asegúrate que todas las imágenes están en el directorio `files/`
 2. Verifica que `fotos.db` está actualizado
-3. Ejecuta `update-tags.py` para regenerar el caché
+3. Ejecuta `update-tags.py` para regenerar el caché de hashtags
+4. Ejecuta `update-ai-tags.py` para regenerar el caché de etiquetas IA
 
 ## Añadir una foto nueva manualmente
 
