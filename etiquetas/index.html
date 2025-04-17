@@ -84,7 +84,7 @@
   <script>
     async function loadTags() {
       try {
-        const response = await fetch('tags-cache.json');
+        const response = await fetch('../tags-cache.json');
         const data = await response.json();
         const tagsList = document.getElementById('tags-list');
         

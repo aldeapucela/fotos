@@ -66,7 +66,7 @@
         <i class="fa-solid fa-cubes"></i>
         <div class="flex-1">
           <h1 class="text-xl font-semibold">Elementos detectados</h1>
-          <p class="text-sm text-instagram-500">Identificados automáticamente en las fotos</p>
+          <p class="text-sm text-instagram-500">Automáticamente en las fotos</p>
           <a href="/" class="text-sm text-instagram-500 hover:text-instagram-600">
             <i class="fa-solid fa-arrow-left"></i>
             Volver a la galería
@@ -85,7 +85,7 @@
   <script>
     async function loadElements() {
       try {
-        const response = await fetch('ai-tags-cache.json');
+        const response = await fetch('../ai-tags-cache.json');
         const data = await response.json();
         const elementsList = document.getElementById('elements-list');
         
