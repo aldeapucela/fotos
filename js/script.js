@@ -55,7 +55,12 @@ function searchPhotos(text) {
   // Show no results message if no photos found
   const contenido = document.getElementById('contenido');
   if (!foundPhotos) {
-    contenido.innerHTML = `<div class="text-center py-20 text-instagram-500">No hay fotos que contengan "${text}"</div>`;
+    // Use textContent to prevent XSS from the search term
+    const noResultsDiv = document.createElement('div');
+    noResultsDiv.className = 'text-center py-20 text-instagram-500';
+    noResultsDiv.textContent = `No hay fotos que contengan "${text}"`;
+    contenido.innerHTML = ''; // Clear previous content
+    contenido.appendChild(noResultsDiv);
   }
 
   // Show search filter indicator
@@ -131,7 +136,12 @@ function filterByTag(event, tag, fromSidebar = false) {
   // Show no results message if no photos found
   const contenido = document.getElementById('contenido');
   if (!foundPhotos) {
-    contenido.innerHTML = `<div class="text-center py-20 text-instagram-500">No hay fotos con la etiqueta #${tag}</div>`;
+    // Use textContent to prevent XSS from the tag name
+    const noResultsDiv = document.createElement('div');
+    noResultsDiv.className = 'text-center py-20 text-instagram-500';
+    noResultsDiv.textContent = `No hay fotos con la etiqueta #${tag}`;
+    contenido.innerHTML = ''; // Clear previous content
+    contenido.appendChild(noResultsDiv);
   }
 
   // Show tag filter indicator
@@ -197,7 +207,12 @@ function filterByElement(element) {
   // Show no results message if no photos found
   const contenido = document.getElementById('contenido');
   if (!foundPhotos) {
-    contenido.innerHTML = `<div class="text-center py-20 text-instagram-500">No hay fotos que contengan el elemento "${element}"</div>`;
+    // Use textContent to prevent XSS from the element name
+    const noResultsDiv = document.createElement('div');
+    noResultsDiv.className = 'text-center py-20 text-instagram-500';
+    noResultsDiv.textContent = `No hay fotos que contengan el elemento "${element}"`;
+    contenido.innerHTML = ''; // Clear previous content
+    contenido.appendChild(noResultsDiv);
   }
 
   // Show element filter indicator
@@ -293,7 +308,9 @@ function openLightbox(imgSrc, data) {
     lightboxContent.insertBefore(inappropriateDiv, lightboxImg);
   }
 
-  lightboxDesc.innerHTML = data.description ? convertHashtagsToLinks(data.description) : '';
+  // Sanitize the description HTML before inserting it
+  const descriptionHtml = data.description ? convertHashtagsToLinks(data.description) : '';
+  lightboxDesc.innerHTML = DOMPurify.sanitize(descriptionHtml);
 
   // Create Telegram URL
   const filename = data.path?.split('/').pop() || '';
@@ -303,10 +320,18 @@ function openLightbox(imgSrc, data) {
   
   // Set author name with link to Telegram
   const lightboxAutorDiv = document.getElementById('lightbox-autor');
-  lightboxAutorDiv.innerHTML = `
-    <i class="fa-regular fa-user mr-2"></i>
-    <a href="${telegramUrl}" target="_blank" class="hover:text-instagram-700">${data.author}</a>
-  `;
+  // Use textContent for the author name to prevent XSS, construct link safely
+  lightboxAutorDiv.innerHTML = ''; // Clear previous content
+  const iconUser = document.createElement('i');
+  iconUser.className = 'fa-regular fa-user mr-2';
+  lightboxAutorDiv.appendChild(iconUser);
+  const authorLink = document.createElement('a');
+  authorLink.href = telegramUrl;
+  authorLink.target = '_blank';
+  authorLink.rel = 'noopener noreferrer'; // Security: Prevent tabnabbing
+  authorLink.className = 'hover:text-instagram-700';
+  authorLink.textContent = data.author; // Use textContent for safety
+  lightboxAutorDiv.appendChild(authorLink);
   
   // Set download link  
   const downloadLink = document.getElementById('lightbox-download');
@@ -352,10 +377,15 @@ function openLightbox(imgSrc, data) {
   
   lightboxFecha.textContent = formattedDate;
   
-  // Add license without "Ver original" link
-  lightboxLicense.innerHTML = `
-    <a class="text-instagram-500 hover:text-instagram-700" href="https://creativecommons.org/licenses/by-sa/4.0/deed.es" target="_blank">CC BY-SA 4.0</a>
-  `;
+  // Add license link safely
+  lightboxLicense.innerHTML = ''; // Clear previous content
+  const licenseLink = document.createElement('a');
+  licenseLink.className = 'text-instagram-500 hover:text-instagram-700';
+  licenseLink.href = 'https://creativecommons.org/licenses/by-sa/4.0/deed.es';
+  licenseLink.target = '_blank';
+  licenseLink.rel = 'noopener noreferrer'; // Security: Prevent tabnabbing
+  licenseLink.textContent = 'CC BY-SA 4.0';
+  lightboxLicense.appendChild(licenseLink);
   
   const shareButton = document.getElementById('lightbox-share');
   shareButton.onclick = (e) => {
@@ -363,9 +393,13 @@ function openLightbox(imgSrc, data) {
     sharePhoto(telegramId, data.description);
   };
 
-  // Update chat and download links
+  // Update chat link (ensure target and rel)
   const chatLink = document.getElementById('lightbox-chat');
   chatLink.href = telegramUrl;
+  chatLink.target = '_blank'; // Assuming it opens in new tab
+  chatLink.rel = 'noopener noreferrer'; // Security: Prevent tabnabbing
+  
+  // Update download link
   const downloadButton = document.getElementById('lightbox-download');
   if (data.is_appropriate !== 0 && data.path) {
     downloadButton.href = imgSrc;
@@ -725,7 +759,7 @@ initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1
               <div class="flex items-center justify-between mb-2">
                 <div class="font-medium text-sm flex items-center">
                   <i class="fa-regular fa-user text-instagram-400 mr-2"></i>
-                  <a href="${telegramUrl}" target="_blank" class="hover:text-instagram-700">${data.author}</a>
+                  <a href="${telegramUrl}" target="_blank" rel="noopener noreferrer" class="hover:text-instagram-700">${data.author}</a>
                 </div>
                 <div class="text-xs text-instagram-500" data-original-date="${data.date}">
                   <i class="fa-regular fa-clock mr-1"></i>
@@ -744,7 +778,7 @@ initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1
                   }
                 </div>
               </div>
-              ${data.description ? `<p class="text-sm text-instagram-500 line-clamp-2">${convertHashtagsToLinks(data.description)}</p>` : ''}
+              ${data.description ? `<p class="text-sm text-instagram-500 line-clamp-2">${DOMPurify.sanitize(convertHashtagsToLinks(data.description))}</p>` : ''}
               <div class="mt-2 flex justify-between items-center text-instagram-400 text-lg">
                 <div class="actions" onclick="event.stopPropagation()">
                   <button type="button" class="share-button hover:text-instagram-600 mr-3" 
@@ -757,11 +791,11 @@ initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1
                       <i class="fa-solid fa-download"></i>
                     </a>
                   ` : ''}
-                  <a href="${telegramUrl}" target="_blank" class="text-instagram-500 hover:text-instagram-700" title="Comentar en Telegram">
+                  <a href="${telegramUrl}" target="_blank" rel="noopener noreferrer" class="text-instagram-500 hover:text-instagram-700" title="Comentar en Telegram">
                     <i class="fa-regular fa-comment"></i>
                   </a>
                 </div>
-                <a class="text-xs text-instagram-400 hover:text-instagram-700" href="https://creativecommons.org/licenses/by-sa/4.0/deed.es" target="_blank">CC BY-SA 4.0</a>
+                <a class="text-xs text-instagram-400 hover:text-instagram-700" href="https://creativecommons.org/licenses/by-sa/4.0/deed.es" target="_blank" rel="noopener noreferrer">CC BY-SA 4.0</a>
               </div>`;
 
           // If image is inappropriate, mark it
