@@ -54,10 +54,12 @@ def generate_rss():
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
         cursor.execute("""
-            SELECT path, date, author, description 
-            FROM imagenes 
-            WHERE description IS NOT NULL 
-            ORDER BY date DESC LIMIT 100
+            SELECT i.path, i.date, i.author, i.description 
+            FROM imagenes i
+            LEFT JOIN image_analysis ia ON ia.image_id = i.id
+            WHERE i.description IS NOT NULL 
+            AND (ia.is_appropriate = 1 OR ia.is_appropriate IS NULL)
+            ORDER BY i.date DESC LIMIT 100
         """)
         photos = cursor.fetchall()
         
