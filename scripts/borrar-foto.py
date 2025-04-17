@@ -11,30 +11,47 @@ def delete_photo(photo_id):
         db_path = os.path.join(project_root, 'fotos.db')
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
-        
-        # Construir el nombre del archivo basado en el ID
-        file_name = f"{photo_id}.jpg"
+
+        # 1. Buscar la ruta del archivo en la base de datos usando el ID
+        cursor.execute("SELECT path FROM imagenes WHERE id = ?", (photo_id,))
+        result = cursor.fetchone()
+
+        if result is None:
+            print(f"No se encontró ninguna foto con ID {photo_id} en la base de datos.")
+            return False
+
+        file_name = result[0]
         file_path = os.path.join(project_root, 'files', file_name)
-        
-        # Borrar el registro de la base de datos
-        cursor.execute("DELETE FROM imagenes WHERE path = ?", (file_name,))
+
+        # 2. Borrar el archivo físico si existe
+        file_deleted = False
+        if os.path.exists(file_path):
+            try:
+                os.remove(file_path)
+                print(f"Archivo borrado: {file_path}")
+                file_deleted = True
+            except OSError as e:
+                print(f"Error al borrar el archivo físico {file_path}: {e}")
+                # Decidir si continuar o no. Por ahora, continuaremos para borrar la entrada de la BD.
+        else:
+            print(f"Advertencia: El archivo físico no existe en la ruta esperada: {file_path}")
+            # Considerar esto como éxito parcial si la entrada de la BD se borra
+
+        # 3. Borrar el registro de la base de datos usando el ID
+        cursor.execute("DELETE FROM imagenes WHERE id = ?", (photo_id,))
         rows_affected = cursor.rowcount
         conn.commit()
-        
-        if rows_affected == 0:
-            print(f"No se encontró la foto {file_name} en la base de datos")
-            return False
-        
-        # Borrar el archivo si existe
-        if os.path.exists(file_path):
-            os.remove(file_path)
-            print(f"Archivo borrado: {file_path}")
+
+        if rows_affected > 0:
+            print(f"Registro de la foto con ID {photo_id} (archivo: {file_name}) eliminado de la base de datos.")
+            # El éxito general depende de si se encontró en la BD y se pudo borrar el registro.
+            # El borrado del archivo es secundario pero se informa.
+            return True
         else:
-            print(f"Advertencia: El archivo no existe en el sistema: {file_path}")
-            
-        print(f"Foto {file_name} eliminada correctamente de la base de datos")
-        return True
-        
+            # Esto no debería ocurrir si fetchone() devolvió algo, pero por si acaso.
+            print(f"Error inesperado: No se pudo borrar el registro con ID {photo_id} de la base de datos.")
+            return False
+
     except sqlite3.Error as e:
         print(f"Error en la base de datos: {e}")
         return False
