@@ -75,9 +75,9 @@ function clearSearch() {
 // Convert hashtags to links
 function convertHashtagsToLinks(text) {
   if (!text) return '';
-  return text.replace(/#(\w+)/g, (match, tag) => {
-    const normalizedTag = tag.toLowerCase();
-    return `<a href="?tag=${normalizedTag}" class="text-instagram-600 dark:text-instagram-400 hover:underline" onclick="filterByTag(event, '${normalizedTag}')">#${tag}</a>`;
+  return text.replace(/#([áéíóúüñÁÉÍÓÚÜÑa-zA-Z0-9_]+)/g, (match, tag) => {
+    const normalizedTag = tag.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    return `<a href="?tag=${normalizedTag}" class="text-instagram-600 dark:text-instagram-400 hover:underline" onclick="filterByTag(event, '${normalizedTag}')">${match}</a>`;
   });
 }
 
@@ -89,7 +89,7 @@ function filterByTag(event, tag) {
   // Close lightbox if open
   closeLightbox();
   
-  const normalizedTag = tag.toLowerCase();
+  const normalizedTag = tag.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
   
   // Update URL and title
   const url = new URL(window.location);
@@ -107,7 +107,9 @@ function filterByTag(event, tag) {
     let hasVisiblePhotos = false;
     group.querySelectorAll('.photo-card').forEach(card => {
       const description = (card.dataset.description || '').toLowerCase();
-      if (description.includes('#' + normalizedTag)) {
+      // Normalize both the description and the tag for comparison
+      const normalizedDescription = description.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      if (normalizedDescription.includes('#' + normalizedTag)) {
         card.classList.remove('hidden');
         hasVisiblePhotos = true;
         foundPhotos = true;

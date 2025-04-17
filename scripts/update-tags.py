@@ -3,6 +3,12 @@ import sqlite3
 import json
 from datetime import datetime
 import re
+import unicodedata
+
+def normalize_tag(tag):
+    """Remove accents from a tag while keeping the # symbol."""
+    return '#' + ''.join(c for c in unicodedata.normalize('NFD', tag[1:])
+                        if unicodedata.category(c) != 'Mn')
 
 def update_tags_cache():
     try:
@@ -23,24 +29,30 @@ def update_tags_cache():
         tags_data = {}
         for description, path, date in photos:
             if description:
-                matches = re.finditer(r'#(\w+)', description.lower())
+                # Updated regex to include accented characters and ñ
+                matches = re.finditer(r'#([a-záéíóúüñA-ZÁÉÍÓÚÜÑ0-9_]+)', description.lower())
                 for match in matches:
                     tag = match.group(0)  # includes the # symbol
-                    if tag not in tags_data:
-                        tags_data[tag] = {
+                    normalized_tag = normalize_tag(tag)
+                    
+                    # Use normalized tag as key but keep original tag for display
+                    if normalized_tag not in tags_data:
+                        tags_data[normalized_tag] = {
                             "count": 0,
-                            "latest_photos": []
+                            "latest_photos": [],
+                            "original_tag": tag  # Keep the original tag with accents
                         }
-                    tags_data[tag]["count"] += 1
+                    tags_data[normalized_tag]["count"] += 1
                     
                     # Keep only the 4 most recent photos for each tag
-                    if len(tags_data[tag]["latest_photos"]) < 4:
-                        tags_data[tag]["latest_photos"].append(path)
+                    if len(tags_data[normalized_tag]["latest_photos"]) < 4:
+                        tags_data[normalized_tag]["latest_photos"].append(path)
         
         # Sort tags by frequency
         sorted_tags = [
             {
-                "tag": tag,
+                "tag": data["original_tag"],  # Use original tag with accents for display
+                "normalized_tag": tag,  # Add normalized version for linking
                 "count": data["count"],
                 "latest_photos": data["latest_photos"]
             }
