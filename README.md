@@ -12,14 +12,26 @@ aldeapucela/fotos/
 │   ├── feed-rss.py   # Generador del feed RSS
 │   └── update-tags.py
 ├── fotos.db          # Base de datos SQLite
+├── fotos.db.sample   # Plantilla de la base de datos
 ├── feed.xml          # Feed RSS con las últimas 100 fotos
 ├── tags-cache.json   # Caché de etiquetas
 ├── index.html        # Galería principal
 └── etiquetas.html    # Vista de etiquetas
 ```
 
+## Instalación
+
+1. Crea la base de datos inicial:
+```bash
+cp fotos.db.sample fotos.db
+```
+
+2. Asegúrate que todas las imágenes están en el directorio `files/`
+3. Añade la base de datos fotos.db la información de las imágenes
+4. Ejecuta `update-tags.py` para generar el caché
+
 ### Base de datos
-El archivo `fotos.db` contiene una tabla `imagenes` con la siguiente estructura:
+El archivo `fotos.db` contiene las siguientes tablas:
 
 ```sql
 CREATE TABLE imagenes (
@@ -29,7 +41,28 @@ CREATE TABLE imagenes (
     author TEXT,            -- Autor de la foto
     description TEXT        -- Descripción con #hashtags
 );
+
+CREATE TABLE "image_analysis" (
+    "id" INTEGER,
+    "image_id" INTEGER NOT NULL UNIQUE,
+    "description" TEXT NOT NULL,
+    "tags" TEXT,
+    "risk_assessment" TEXT,
+    "flags" TEXT,
+    "is_appropriate" BOOLEAN NOT NULL,
+    "analysis_date" DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY("image_id") REFERENCES "imagenes"("id") ON DELETE CASCADE,
+    PRIMARY KEY("id" AUTOINCREMENT)
+);
 ```
+
+La tabla `image_analysis` es opcional y está diseñada para almacenar resultados de análisis de contenido de las imágenes utilizando IA. Esto permite:
+
+1. Filtrar contenido inapropiado del feed RSS automáticamente
+2. Mostrar advertencias en la interfaz cuando sea necesario
+3. Mantener un registro de análisis de contenido
+
+Se recomienda usar un modelo de IA capaz de analizar imágenes para generar estos análisis. Ver [AI_PROMPT.md](AI_PROMPT.md) para un ejemplo del prompt a utilizar y el formato de datos esperado.
 
 ## Scripts de mantenimiento
 
@@ -40,7 +73,7 @@ CREATE TABLE imagenes (
 - Genera un feed RSS con las últimas 100 fotos
 - Incluye descripciones, autores y enlaces directos
 - Indica la licencia CC BY-SA 4.0 de las imágenes
-- Se recomienda ejecutar cada hora en un cron
+- Se recomienda ejecutar cada 5 minutos en un cron
 
 ### Borrar fotos
 ```bash
@@ -100,6 +133,8 @@ VALUES
  'Nombre del Autor',               -- Tu nombre
  'Descripción #tag1 #tag2');      -- Descripción con hashtags
 ```
+
+Puedes automatizar con herramientas externas la importación de imágenes a la carpeta y entradas en la base de datos. Por ejemplo con [n8n](https://n8n.io/).
 
 3. Actualiza el caché de tags:
 ```bash
