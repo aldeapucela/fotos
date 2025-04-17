@@ -89,9 +89,11 @@ function convertHashtagsToLinks(text) {
 }
 
 // Filter photos by tag
-function filterByTag(event, tag) {
-  event.preventDefault();
-  event.stopPropagation();
+function filterByTag(event, tag, fromSidebar = false) {
+  if (event) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
   
   // Close lightbox if open
   closeLightbox();
@@ -114,7 +116,6 @@ function filterByTag(event, tag) {
     let hasVisiblePhotos = false;
     group.querySelectorAll('.photo-card').forEach(card => {
       const description = (card.dataset.description || '').toLowerCase();
-      // Normalize both the description and the tag for comparison
       const normalizedDescription = description.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
       if (normalizedDescription.includes('#' + normalizedTag)) {
         card.classList.remove('hidden');
@@ -138,6 +139,11 @@ function filterByTag(event, tag) {
   const tagName = document.getElementById('tagName');
   tagName.textContent = `#${tag}`;
   tagFilter.classList.remove('hidden');
+  
+  // Close sidebar only if coming from sidebar
+  if (fromSidebar) {
+    toggleSidebar();
+  }
 }
 
 // Clear tag filter
@@ -208,9 +214,6 @@ const lightboxDesc = document.getElementById('lightbox-desc');
 const lightboxAutor = document.getElementById('lightbox-autor').querySelector('span');
 const lightboxFecha = document.getElementById('lightbox-fecha').querySelector('span');
 const lightboxLicense = document.getElementById('lightbox-license');
-const filterToggle = document.getElementById('filterToggle');
-const dateFilterBar = document.getElementById('dateFilterBar');
-const tagsFilterBar = document.getElementById('tagsFilterBar');
 const gridViewBtn = document.getElementById('gridViewBtn');
 const listViewBtn = document.getElementById('listViewBtn');
 const contenidoEl = document.getElementById('contenido');
@@ -230,12 +233,6 @@ if (searchInput) {
     }, 300); // Debounce search for better performance
   });
 }
-
-// Toggle filter bars
-filterToggle.addEventListener('click', () => {
-  dateFilterBar.classList.toggle('hidden');
-  tagsFilterBar.classList.toggle('hidden');
-});
 
 // Toggle view modes (grid vs list)
 gridViewBtn.addEventListener('click', () => {
@@ -527,19 +524,21 @@ initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1
     const tagsResponse = await fetch('tags-cache.json');
     const tagsData = await tagsResponse.json();
     
-    // Add tags to the filter bar
-    const tagsFilterBar = document.querySelector('#tagsFilterBar > div');
-    tagsData.tags.forEach(({tag}) => {
-      const tagBtn = document.createElement('button');
-      tagBtn.className = 'py-1 px-2 text-sm font-medium text-instagram-500 hover:text-instagram-600';
-      tagBtn.dataset.tag = tag.substring(1); // Remove # from tag
-      tagBtn.textContent = tag;
-      tagBtn.onclick = (e) => {
-        e.preventDefault();
-        filterByTag(e, tag.substring(1));
-      };
-      tagsFilterBar.appendChild(tagBtn);
-    });
+    // Add tags to the sidebar filters (in tag dropdown)
+    const tagDropdownContainer = document.querySelector('#tagDropdown .space-y-1');
+    if (tagDropdownContainer) {
+      tagsData.tags.forEach(({tag}) => {
+        const tagBtn = document.createElement('button');
+        tagBtn.className = 'w-full text-left py-1.5 px-3 text-sm rounded hover:bg-instagram-100 dark:hover:bg-instagram-600 text-instagram-500';
+        tagBtn.dataset.tag = tag.substring(1); // Remove # from tag
+        tagBtn.textContent = tag;
+        tagBtn.onclick = (e) => {
+          e.preventDefault();
+          filterByTag(e, tag.substring(1), true);
+        };
+        tagDropdownContainer.appendChild(tagBtn);
+      });
+    }
 
     // Continue with existing query for photos
     const res = db.exec(`
@@ -577,38 +576,60 @@ initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1
         return acc;
       }, {});
 
-      // Add date filters to the filter bar
-      const dateFilters = document.querySelector('#dateFilterBar > div');
-      Object.keys(grupos).forEach(fecha => {
-        const dateBtn = document.createElement('button');
-        dateBtn.className = 'py-1 px-2 text-sm font-medium';
-        dateBtn.dataset.filter = fecha;
-        dateBtn.textContent = new Date(fecha).toLocaleDateString('es', {
-          day: 'numeric',
-          month: 'short'
-        });
-        dateFilters.appendChild(dateBtn);
-      });
-
-      // Date filter functionality
-      const filterButtons = document.querySelectorAll('#dateFilterBar button');
-      filterButtons.forEach(btn => {
-        btn.addEventListener('click', () => {
+      // Add date filters to the date dropdown
+      const dateFiltersContainer = document.querySelector('#dateDropdown .space-y-1');
+      if (dateFiltersContainer) {
+        // Definir función para resetear filtros de fecha
+        function resetDateFilter() {
           // Update active state
-          filterButtons.forEach(b => b.classList.remove('date-filter-active'));
-          btn.classList.add('date-filter-active');
+          document.querySelectorAll('[data-filter]').forEach(b => b.classList.remove('filter-active'));
+          document.querySelector('[data-filter="all"]').classList.add('filter-active');
           
-          // Filter content
-          const filter = btn.dataset.filter;
+          // Show all date groups
           document.querySelectorAll('.date-group').forEach(group => {
-            if (filter === 'all' || group.dataset.date === filter) {
-              group.classList.remove('hidden');
-            } else {
-              group.classList.add('hidden');
-            }
+            group.classList.remove('hidden');
           });
+          
+          // Close sidebar after selection
+          toggleSidebar();
+        }
+
+        // Add click handler to "Todas las fechas" button
+        const allDatesBtn = document.querySelector('[data-filter="all"]');
+        if (allDatesBtn) {
+          allDatesBtn.onclick = resetDateFilter;
+        }
+
+        Object.keys(grupos).forEach(fecha => {
+          const dateBtn = document.createElement('button');
+          dateBtn.className = 'w-full text-left py-1.5 px-3 text-sm rounded hover:bg-instagram-100 dark:hover:bg-instagram-600 text-instagram-500';
+          dateBtn.dataset.filter = fecha;
+          dateBtn.textContent = new Date(fecha).toLocaleDateString('es', {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric'
+          });
+          dateBtn.addEventListener('click', () => {
+            // Update active state
+            document.querySelectorAll('[data-filter]').forEach(b => b.classList.remove('filter-active'));
+            dateBtn.classList.add('filter-active');
+            
+            // Filter content
+            const filter = dateBtn.dataset.filter;
+            document.querySelectorAll('.date-group').forEach(group => {
+              if (filter === 'all' || group.dataset.date === filter) {
+                group.classList.remove('hidden');
+              } else {
+                group.classList.add('hidden');
+              }
+            });
+            
+            // Close sidebar after selection
+            toggleSidebar();
+          });
+          dateFiltersContainer.appendChild(dateBtn);
         });
-      });
+      }
 
       // Create observer for lazy loading
       const imageObserver = new IntersectionObserver((entries, observer) => {
@@ -924,26 +945,6 @@ function shareTagCollection() {
   }
 }
 
-// Search bar toggle
-const searchToggle = document.getElementById('searchToggle');
-const searchBar = document.getElementById('searchBar');
-
-searchToggle.addEventListener('click', () => {
-  searchBar.classList.toggle('hidden');
-  if (!searchBar.classList.contains('hidden')) {
-    searchInput.focus();
-  }
-});
-
-// Close search bar when clicking outside
-document.addEventListener('click', (e) => {
-  if (!searchBar.classList.contains('hidden') && 
-      !searchBar.contains(e.target) && 
-      !searchToggle.contains(e.target)) {
-    searchBar.classList.add('hidden');
-  }
-});
-
 // Upload dialog functionality
 const uploadDialog = document.getElementById('uploadDialog');
 const uploadPhotoBtn = document.getElementById('uploadPhotoBtn');
@@ -997,4 +998,95 @@ window.addEventListener('load', () => {
             }
         }, 500);
     }
+});
+
+// Sidebar functionality
+const sidebar = document.getElementById('sidebar');
+const sidebarOverlay = document.getElementById('sidebarOverlay');
+const menuToggle = document.getElementById('menuToggle');
+const closeSidebar = document.getElementById('closeSidebar');
+
+function toggleSidebar() {
+  sidebar.classList.toggle('active');
+  sidebarOverlay.classList.toggle('active');
+  document.body.classList.toggle('overflow-hidden');
+  
+  // Close dropdowns when closing sidebar
+  if (!sidebar.classList.contains('active')) {
+    dateDropdown.classList.add('hidden');
+    tagDropdown.classList.add('hidden');
+    dateDropdownButton.querySelector('.fa-chevron-down').style.transform = '';
+    tagDropdownButton.querySelector('.fa-chevron-down').style.transform = '';
+  }
+}
+
+menuToggle.addEventListener('click', toggleSidebar);
+closeSidebar.addEventListener('click', toggleSidebar);
+sidebarOverlay.addEventListener('click', toggleSidebar);
+
+// Close sidebar with escape key
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && sidebar.classList.contains('active')) {
+    toggleSidebar();
+  }
+});
+
+// Dropdown functionality
+const dateDropdownButton = document.getElementById('dateDropdownButton');
+const tagDropdownButton = document.getElementById('tagDropdownButton');
+const dateDropdown = document.getElementById('dateDropdown');
+const tagDropdown = document.getElementById('tagDropdown');
+
+function toggleDropdown(dropdown, button) {
+  const isOpen = dropdown.classList.contains('hidden');
+  
+  // Close other dropdown first
+  if (dropdown === dateDropdown) {
+    tagDropdown.classList.add('hidden');
+    tagDropdownButton.querySelector('.fa-chevron-down').style.transform = '';
+  } else {
+    dateDropdown.classList.add('hidden');
+    dateDropdownButton.querySelector('.fa-chevron-down').style.transform = '';
+  }
+  
+  // Toggle current dropdown
+  dropdown.classList.toggle('hidden');
+  button.querySelector('.fa-chevron-down').style.transform = isOpen ? 'rotate(180deg)' : '';
+}
+
+dateDropdownButton.addEventListener('click', () => toggleDropdown(dateDropdown, dateDropdownButton));
+tagDropdownButton.addEventListener('click', () => toggleDropdown(tagDropdown, tagDropdownButton));
+
+// Close dropdowns when clicking outside
+document.addEventListener('click', (e) => {
+  if (!dateDropdownButton.contains(e.target) && !dateDropdown.contains(e.target)) {
+    dateDropdown.classList.add('hidden');
+    dateDropdownButton.querySelector('.fa-chevron-down').style.transform = '';
+  }
+  if (!tagDropdownButton.contains(e.target) && !tagDropdown.contains(e.target)) {
+    tagDropdown.classList.add('hidden');
+    tagDropdownButton.querySelector('.fa-chevron-down').style.transform = '';
+  }
+});
+
+// Close sidebar on search
+if (searchInput) {
+  searchInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      searchPhotos(e.target.value);
+      toggleSidebar();
+    }
+  });
+}
+
+// Update date filter to close sidebar
+document.addEventListener('DOMContentLoaded', () => {
+  const dateFilters = document.querySelectorAll('[data-filter]');
+  dateFilters.forEach(button => {
+    const originalClick = button.onclick;
+    button.onclick = (e) => {
+      if (originalClick) originalClick(e);
+      toggleSidebar();
+    };
+  });
 });

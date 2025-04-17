@@ -156,3 +156,22 @@ body {
     -webkit-user-select: none;
     user-select: none;
   }
+
+  /* Sidebar styles */
+  #sidebar {
+    box-shadow: -2px 0 8px rgba(0,0,0,0.1);
+  }
+
+  #sidebar.active {
+    transform: translateX(0);
+  }
+
+  #sidebarOverlay.active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* Active state for filter buttons */
+  .filter-active {
+    @apply bg-instagram-100 dark:bg-instagram-700 text-instagram-900 dark:text-instagram-50;
+  }

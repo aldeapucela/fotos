@@ -63,12 +63,10 @@
   <header class="bg-white dark:bg-instagram-800 border-b border-instagram-200 dark:border-instagram-700 shadow-sm">
     <div class="container mx-auto px-4 py-3">
       <div class="flex items-center gap-4">
-        <a href="/" class="text-instagram-500 hover:text-instagram-700" title="Volver a Aldea Pucela">
-          <i class="fa-solid fa-house"></i>
-        </a>
+        <i class="fa-solid fa-cubes"></i>
         <div class="flex-1">
           <h1 class="text-xl font-semibold">Elementos detectados</h1>
-          <p class="text-sm text-instagram-500">Elementos identificados por IA en las fotos</p>
+          <p class="text-sm text-instagram-500">Identificados automáticamente en las fotos</p>
           <a href="/" class="text-sm text-instagram-500 hover:text-instagram-600">
             <i class="fa-solid fa-arrow-left"></i>
             Volver a la galería
@@ -95,6 +93,10 @@
           const elementEl = document.createElement('a');
           elementEl.href = `/?element=${encodeURIComponent(tag)}`;
           elementEl.className = 'element-card bg-white dark:bg-instagram-800 rounded-lg shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5';
+          elementEl.onclick = (e) => {
+            e.preventDefault();
+            window.location.href = elementEl.href;
+          };
           
           // Create photo collage with smaller images
           const photoCollage = latest_photos.length > 0 

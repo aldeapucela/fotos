@@ -1,6 +1,75 @@
 {
-  "lastUpdate": "2025-04-17T18:45:04.442591",
+  "lastUpdate": "2025-04-17T20:11:37.454039",
   "tags": [
+    {
+      "tag": "flores",
+      "count": 6,
+      "latest_photos": [
+        "27774.jpg",
+        "27553.jpg",
+        "27469.jpg",
+        "27232.jpg"
+      ]
+    },
+    {
+      "tag": "jardín",
+      "count": 6,
+      "latest_photos": [
+        "27774.jpg",
+        "27754.jpg",
+        "27565.jpg",
+        "27553.jpg"
+      ]
+    },
+    {
+      "tag": "arquitectura",
+      "count": 5,
+      "latest_photos": [
+        "27567.jpg",
+        "27565.jpg",
+        "27537.jpg",
+        "27235.jpg"
+      ]
+    },
+    {
+      "tag": "estatua",
+      "count": 5,
+      "latest_photos": [
+        "27537.jpg",
+        "27240.jpg",
+        "27232.jpg",
+        "27228.jpg"
+      ]
+    },
+    {
+      "tag": "arquitectura antigua",
+      "count": 4,
+      "latest_photos": [
+        "27778.jpg",
+        "27469.jpg",
+        "27228.jpg",
+        "27211.jpg"
+      ]
+    },
+    {
+      "tag": "ciudad",
+      "count": 4,
+      "latest_photos": [
+        "27829.jpg",
+        "27775.jpg",
+        "27567.jpg",
+        "27220.jpg"
+      ]
+    },
+    {
+      "tag": "edificio histórico",
+      "count": 3,
+      "latest_photos": [
+        "27748.jpg",
+        "27240.jpg",
+        "27228.jpg"
+      ]
+    },
     {
       "tag": "edificios",
       "count": 3,
@@ -11,19 +80,145 @@
       ]
     },
     {
-      "tag": "ciudad",
-      "count": 2,
+      "tag": "estructura metálica",
+      "count": 3,
       "latest_photos": [
-        "27829.jpg",
-        "27775.jpg"
+        "27754.jpg",
+        "27473.jpg",
+        "27218.jpg"
+      ]
+    },
+    {
+      "tag": "gente paseando",
+      "count": 3,
+      "latest_photos": [
+        "27471.jpg",
+        "27386.jpg",
+        "27240.jpg"
+      ]
+    },
+    {
+      "tag": "naturaleza",
+      "count": 3,
+      "latest_photos": [
+        "27553.jpg",
+        "27552.jpg",
+        "27220.jpg"
       ]
     },
     {
       "tag": "noche",
+      "count": 3,
+      "latest_photos": [
+        "27801.jpg",
+        "27778.jpg",
+        "27537.jpg"
+      ]
+    },
+    {
+      "tag": "pavo real",
+      "count": 3,
+      "latest_photos": [
+        "27552.jpg",
+        "27471.jpg",
+        "27205.jpg"
+      ]
+    },
+    {
+      "tag": "puente",
+      "count": 3,
+      "latest_photos": [
+        "27556.jpg",
+        "27473.jpg",
+        "27220.jpg"
+      ]
+    },
+    {
+      "tag": "urbano",
+      "count": 3,
+      "latest_photos": [
+        "27801.jpg",
+        "27565.jpg",
+        "27218.jpg"
+      ]
+    },
+    {
+      "tag": "arcos",
+      "count": 2,
+      "latest_photos": [
+        "27774.jpg",
+        "27748.jpg"
+      ]
+    },
+    {
+      "tag": "calle",
+      "count": 2,
+      "latest_photos": [
+        "27778.jpg",
+        "27215.jpg"
+      ]
+    },
+    {
+      "tag": "campanario",
+      "count": 2,
+      "latest_photos": [
+        "27235.jpg",
+        "27233.jpg"
+      ]
+    },
+    {
+      "tag": "cúpula",
+      "count": 2,
+      "latest_photos": [
+        "27567.jpg",
+        "27565.jpg"
+      ]
+    },
+    {
+      "tag": "estanque",
+      "count": 2,
+      "latest_photos": [
+        "27754.jpg",
+        "27218.jpg"
+      ]
+    },
+    {
+      "tag": "mural",
+      "count": 2,
+      "latest_photos": [
+        "27524.jpg",
+        "27215.jpg"
+      ]
+    },
+    {
+      "tag": "plaza nocturna",
+      "count": 2,
+      "latest_photos": [
+        "27386.jpg",
+        "27233.jpg"
+      ]
+    },
+    {
+      "tag": "río",
+      "count": 2,
+      "latest_photos": [
+        "27556.jpg",
+        "27220.jpg"
+      ]
+    },
+    {
+      "tag": "árboles",
       "count": 2,
       "latest_photos": [
         "27801.jpg",
-        "27778.jpg"
+        "27556.jpg"
+      ]
+    },
+    {
+      "tag": "Jesucristo",
+      "count": 1,
+      "latest_photos": [
+        "27232.jpg"
       ]
     },
     {
@@ -34,17 +229,24 @@
       ]
     },
     {
-      "tag": "arcos",
+      "tag": "arbustos",
       "count": 1,
       "latest_photos": [
-        "27774.jpg"
+        "27553.jpg"
       ]
     },
     {
-      "tag": "arquitectura antigua",
+      "tag": "arquitectura de piedra",
       "count": 1,
       "latest_photos": [
-        "27778.jpg"
+        "27748.jpg"
+      ]
+    },
+    {
+      "tag": "arquitectura histórica",
+      "count": 1,
+      "latest_photos": [
+        "27386.jpg"
       ]
     },
     {
@@ -55,6 +257,27 @@
       ]
     },
     {
+      "tag": "asociación de vecinos",
+      "count": 1,
+      "latest_photos": [
+        "27524.jpg"
+      ]
+    },
+    {
+      "tag": "atardecer",
+      "count": 1,
+      "latest_photos": [
+        "27567.jpg"
+      ]
+    },
+    {
+      "tag": "blanco",
+      "count": 1,
+      "latest_photos": [
+        "27565.jpg"
+      ]
+    },
+    {
       "tag": "botellas",
       "count": 1,
       "latest_photos": [
@@ -62,10 +285,31 @@
       ]
     },
     {
-      "tag": "calle",
+      "tag": "busto",
       "count": 1,
       "latest_photos": [
-        "27778.jpg"
+        "27205.jpg"
+      ]
+    },
+    {
+      "tag": "carro",
+      "count": 1,
+      "latest_photos": [
+        "27222.jpg"
+      ]
+    },
+    {
+      "tag": "carro procesional",
+      "count": 1,
+      "latest_photos": [
+        "27469.jpg"
+      ]
+    },
+    {
+      "tag": "celebración",
+      "count": 1,
+      "latest_photos": [
+        "27524.jpg"
       ]
     },
     {
@@ -76,6 +320,13 @@
       ]
     },
     {
+      "tag": "cielo azul",
+      "count": 1,
+      "latest_photos": [
+        "27748.jpg"
+      ]
+    },
+    {
       "tag": "cielo nublado",
       "count": 1,
       "latest_photos": [
@@ -83,10 +334,38 @@
       ]
     },
     {
+      "tag": "claustro",
+      "count": 1,
+      "latest_photos": [
+        "27211.jpg"
+      ]
+    },
+    {
       "tag": "columnas",
       "count": 1,
       "latest_photos": [
         "27790.jpg"
+      ]
+    },
+    {
+      "tag": "conejo",
+      "count": 1,
+      "latest_photos": [
+        "27553.jpg"
+      ]
+    },
+    {
+      "tag": "corona de espinas",
+      "count": 1,
+      "latest_photos": [
+        "27232.jpg"
+      ]
+    },
+    {
+      "tag": "crucifixión",
+      "count": 1,
+      "latest_photos": [
+        "27232.jpg"
       ]
     },
     {
@@ -104,10 +383,24 @@
       ]
     },
     {
+      "tag": "desfile",
+      "count": 1,
+      "latest_photos": [
+        "27469.jpg"
+      ]
+    },
+    {
       "tag": "dominio",
       "count": 1,
       "latest_photos": [
         "27829.jpg"
+      ]
+    },
+    {
+      "tag": "domo",
+      "count": 1,
+      "latest_photos": [
+        "27218.jpg"
       ]
     },
     {
@@ -118,6 +411,41 @@
       ]
     },
     {
+      "tag": "edificios antiguos",
+      "count": 1,
+      "latest_photos": [
+        "27233.jpg"
+      ]
+    },
+    {
+      "tag": "edificios coloridos",
+      "count": 1,
+      "latest_photos": [
+        "27215.jpg"
+      ]
+    },
+    {
+      "tag": "entrada verde",
+      "count": 1,
+      "latest_photos": [
+        "27748.jpg"
+      ]
+    },
+    {
+      "tag": "estatuas religiosas",
+      "count": 1,
+      "latest_photos": [
+        "27469.jpg"
+      ]
+    },
+    {
+      "tag": "estrellas",
+      "count": 1,
+      "latest_photos": [
+        "27524.jpg"
+      ]
+    },
+    {
       "tag": "fachada de piedra",
       "count": 1,
       "latest_photos": [
@@ -125,10 +453,73 @@
       ]
     },
     {
-      "tag": "flores",
+      "tag": "farolas",
       "count": 1,
       "latest_photos": [
-        "27774.jpg"
+        "27748.jpg"
+      ]
+    },
+    {
+      "tag": "fauna",
+      "count": 1,
+      "latest_photos": [
+        "27552.jpg"
+      ]
+    },
+    {
+      "tag": "flores rojas",
+      "count": 1,
+      "latest_photos": [
+        "27228.jpg"
+      ]
+    },
+    {
+      "tag": "heridas",
+      "count": 1,
+      "latest_photos": [
+        "27232.jpg"
+      ]
+    },
+    {
+      "tag": "histórica",
+      "count": 1,
+      "latest_photos": [
+        "27235.jpg"
+      ]
+    },
+    {
+      "tag": "histórico",
+      "count": 1,
+      "latest_photos": [
+        "27537.jpg"
+      ]
+    },
+    {
+      "tag": "iglesia",
+      "count": 1,
+      "latest_photos": [
+        "27235.jpg"
+      ]
+    },
+    {
+      "tag": "iluminación LED",
+      "count": 1,
+      "latest_photos": [
+        "27473.jpg"
+      ]
+    },
+    {
+      "tag": "iluminación nocturna",
+      "count": 1,
+      "latest_photos": [
+        "27233.jpg"
+      ]
+    },
+    {
+      "tag": "imagen religiosa",
+      "count": 1,
+      "latest_photos": [
+        "27386.jpg"
       ]
     },
     {
@@ -139,10 +530,24 @@
       ]
     },
     {
-      "tag": "jardín",
+      "tag": "jardín interior",
       "count": 1,
       "latest_photos": [
-        "27774.jpg"
+        "27211.jpg"
+      ]
+    },
+    {
+      "tag": "lluvia",
+      "count": 1,
+      "latest_photos": [
+        "27386.jpg"
+      ]
+    },
+    {
+      "tag": "luna",
+      "count": 1,
+      "latest_photos": [
+        "27537.jpg"
       ]
     },
     {
@@ -150,6 +555,27 @@
       "count": 1,
       "latest_photos": [
         "27775.jpg"
+      ]
+    },
+    {
+      "tag": "multitud",
+      "count": 1,
+      "latest_photos": [
+        "27222.jpg"
+      ]
+    },
+    {
+      "tag": "niebla",
+      "count": 1,
+      "latest_photos": [
+        "27556.jpg"
+      ]
+    },
+    {
+      "tag": "nube",
+      "count": 1,
+      "latest_photos": [
+        "27215.jpg"
       ]
     },
     {
@@ -188,10 +614,73 @@
       ]
     },
     {
+      "tag": "peatonal",
+      "count": 1,
+      "latest_photos": [
+        "27473.jpg"
+      ]
+    },
+    {
+      "tag": "persona caminando",
+      "count": 1,
+      "latest_photos": [
+        "27754.jpg"
+      ]
+    },
+    {
+      "tag": "plantas en macetas",
+      "count": 1,
+      "latest_photos": [
+        "27748.jpg"
+      ]
+    },
+    {
+      "tag": "plaza",
+      "count": 1,
+      "latest_photos": [
+        "27240.jpg"
+      ]
+    },
+    {
+      "tag": "plumas",
+      "count": 1,
+      "latest_photos": [
+        "27552.jpg"
+      ]
+    },
+    {
+      "tag": "procesión",
+      "count": 1,
+      "latest_photos": [
+        "27222.jpg"
+      ]
+    },
+    {
+      "tag": "religión",
+      "count": 1,
+      "latest_photos": [
+        "27222.jpg"
+      ]
+    },
+    {
       "tag": "restaurante",
       "count": 1,
       "latest_photos": [
         "27775.jpg"
+      ]
+    },
+    {
+      "tag": "sayo rojo",
+      "count": 1,
+      "latest_photos": [
+        "27232.jpg"
+      ]
+    },
+    {
+      "tag": "sendero",
+      "count": 1,
+      "latest_photos": [
+        "27754.jpg"
       ]
     },
     {
@@ -202,10 +691,24 @@
       ]
     },
     {
-      "tag": "urbano",
+      "tag": "torre",
       "count": 1,
       "latest_photos": [
-        "27801.jpg"
+        "27235.jpg"
+      ]
+    },
+    {
+      "tag": "vegetación",
+      "count": 1,
+      "latest_photos": [
+        "27556.jpg"
+      ]
+    },
+    {
+      "tag": "velas",
+      "count": 1,
+      "latest_photos": [
+        "27232.jpg"
       ]
     },
     {
@@ -213,13 +716,6 @@
       "count": 1,
       "latest_photos": [
         "27775.jpg"
-      ]
-    },
-    {
-      "tag": "árboles",
-      "count": 1,
-      "latest_photos": [
-        "27801.jpg"
       ]
     },
     {

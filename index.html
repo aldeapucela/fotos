@@ -42,15 +42,15 @@
       }
     }
   </script>
-  <link rel="stylesheet" href="css/style.css?202504161930">
+  <link rel="stylesheet" href="css/style.css?202504172016">
 </head>
 
 <body class="bg-instagram-50 dark:bg-instagram-900 text-instagram-900 dark:text-instagram-50 font-sans">
 
   <!-- Header with navigation -->  
-  <header class="sticky top-0 z-50 bg-white dark:bg-instagram-800 border-b border-instagram-200 dark:border-instagram-700 shadow-sm">
-    <div class="container mx-auto px-4 py-3 pb-1">
-      <!-- Top row with logo and icons -->
+  <header class="sticky top-0 z-40 bg-white dark:bg-instagram-800 border-b border-instagram-200 dark:border-instagram-700 shadow-sm">
+    <div class="container mx-auto px-4 py-3">
+      <!-- Top row with logo and menu button -->
       <div class="flex justify-between items-center">
         <div class="flex items-center gap-4">
           <a href="/" class="text-instagram-500 hover:text-instagram-700" title="Inicio">
@@ -60,29 +60,9 @@
             <h1 class="text-sm text-[#57316b] dark:text-[#dfb59a] bg-[#dfb59a] dark:bg-[#57316b] px-2 py-0.5 rounded font-bold inline-block uppercase">Fotos Valladolid</h1>
           </div>
         </div>
-        <div class="flex gap-4 items-center">
-          <button id="searchToggle" class="text-instagram-500 hover:text-instagram-900 transition-colors">
-            <i class="fa-solid fa-magnifying-glass text-lg"></i>
-          </button>
-          <a href="/etiquetas.html" class="text-instagram-500 hover:text-instagram-900 transition-colors" title="Ver tags populares">
-            <i class="fa-solid fa-tags text-lg"></i>
-          </a>
-          <a href="/elementos.html" class="text-instagram-500 hover:text-instagram-900 transition-colors" title="Ver elementos detectados">
-            <i class="fa-solid fa-image text-lg"></i>
-          </a>
-          <button id="filterToggle" class="text-instagram-500 hover:text-instagram-900 transition-colors">
-            <i class="fa-solid fa-filter text-lg"></i>
-          </button>
-        </div>
-      </div>
-      
-      <!-- Search bar (hidden by default) -->
-      <div id="searchBar" class="hidden mt-3">
-        <div class="relative w-full">
-          <input type="search" id="searchInput" 
-                 placeholder="Buscar en las descripciones..." 
-                 class="w-full px-4 py-1.5 text-sm rounded-full bg-instagram-100 dark:bg-instagram-700 border-none focus:ring-2 focus:ring-instagram-500">
-        </div>
+        <button id="menuToggle" class="text-instagram-500 hover:text-instagram-900 transition-colors">
+          <i class="fa-solid fa-bars text-xl"></i>
+        </button>
       </div>
     </div>
 
@@ -113,48 +93,114 @@
         </div>
       </div>
     </div>
-    
-    <!-- Upload confirmation dialog -->
-    <div id="uploadDialog" class="fixed inset-0 z-50 bg-black/80 hidden items-center justify-center">
-      <div class="bg-white dark:bg-instagram-800 rounded-lg max-w-lg w-full mx-4 relative">
-        <button id="closeUploadDialog" class="absolute right-4 top-4 text-instagram-500 hover:text-instagram-700">
+  </header>
+
+  <!-- Sidebar -->
+  <div id="sidebar" class="fixed top-0 right-0 h-full w-80 bg-white dark:bg-instagram-800 shadow-lg transform translate-x-full transition-transform duration-300 ease-in-out z-50">
+    <div class="flex flex-col h-full">
+      <!-- Sidebar header -->
+      <div class="p-4 border-b border-instagram-200 dark:border-instagram-700 flex justify-between items-center">
+        <h2 class="text-lg font-medium">Menú</h2>
+        <button id="closeSidebar" class="text-instagram-500 hover:text-instagram-700">
           <i class="fa-solid fa-xmark text-xl"></i>
         </button>
-        <div class="p-6 text-sm">
-          <h3 class="text-lg font-medium mb-4"><i class="fa-solid fa-upload mr-2"></i>Subir foto a la galería</h3>
-          <p class="mb-4">Se te va a redirigir al grupo de telegram de la comunidad, donde podrás subir tu foto, al hacerlo aceptas que:</p>
-          <ul class="list-disc pl-5 mb-6 space-y-2">
-            <li>Eres el autor/a de la misma</li>
-            <li>Se comparta con licencia <a class="underline" href="https://creativecommons.org/licenses/by-sa/4.0/deed.es">CC BY SA 4.0</a></li>
-            <li>Pueda usarse si te citan como autor/a</li>
-          </ul>
-          <p class="mb-6">Por favor añade una descripción y #etiquetas al enviar la foto</p>
-          <div class="flex justify-end">
-            <a href="https://t.me/AldeaPucela/27202/27203" 
-               target="_blank"
-               class="bg-[#57316b] text-white px-6 py-2 rounded hover:bg-[#422454] transition-colors">
-              Entendido
+      </div>
+
+      <!-- Sidebar content -->
+      <div class="flex-1 overflow-y-auto">
+        <!-- Search section -->
+        <div class="p-4 border-b border-instagram-200 dark:border-instagram-700">
+          <div class="relative w-full">
+            <input type="search" id="searchInput" 
+                   placeholder="Buscar en las fotos..." 
+                   class="w-full px-4 py-1.5 text-sm rounded-full bg-instagram-100 dark:bg-instagram-700 border-none focus:ring-2 focus:ring-instagram-500">
+          </div>
+        </div>
+
+        <!-- Navigation links -->
+        <div class="p-4 border-b border-instagram-200 dark:border-instagram-700">
+          <h3 class="text-sm font-medium mb-2">Explora</h3>
+          <nav class="space-y-2">
+            <a href="/etiquetas.html" class="flex items-center gap-2 text-instagram-500 hover:text-instagram-700 py-1">
+              <i class="fa-solid fa-tags w-5"></i>
+              <span>Etiquetas populares</span>
             </a>
+            <a href="/elementos.html" class="flex items-center gap-2 text-instagram-500 hover:text-instagram-700 py-1">
+              <i class="fa-solid fa-cubes w-5"></i>
+              <span>Elementos detectados</span>
+            </a>
+          </nav>
+        </div>
+
+        <!-- Filters section -->
+        <div class="p-4">
+          <h3 class="text-sm font-medium mb-2">Filtra</h3>
+          
+          <!-- Date filters -->
+          <div class="mb-4">
+            <button id="dateDropdownButton" class="w-full flex items-center justify-between text-left py-2 px-3 text-sm font-medium rounded bg-instagram-100 dark:bg-instagram-700 hover:bg-instagram-200 dark:hover:bg-instagram-600">
+              <span>
+                <i class="fa-regular fa-calendar mr-2"></i>
+                Por fecha
+              </span>
+              <i class="fa-solid fa-chevron-down transition-transform"></i>
+            </button>
+            <div id="dateDropdown" class="hidden mt-1 bg-white dark:bg-instagram-700 rounded shadow-lg max-h-64 overflow-y-auto">
+              <div class="p-2 space-y-1">
+                <button class="date-filter-active w-full text-left py-1.5 px-3 text-sm rounded hover:bg-instagram-100 dark:hover:bg-instagram-600" data-filter="all">
+                  Todas las fechas
+                </button>
+                <!-- Date filters will be added here dynamically -->
+              </div>
+            </div>
+          </div>
+        
+          <!-- Tag filters -->
+          <div>
+            <button id="tagDropdownButton" class="w-full flex items-center justify-between text-left py-2 px-3 text-sm font-medium rounded bg-instagram-100 dark:bg-instagram-700 hover:bg-instagram-200 dark:hover:bg-instagram-600">
+              <span>
+                <i class="fa-solid fa-tags mr-2"></i>
+                Por etiqueta
+              </span>
+              <i class="fa-solid fa-chevron-down transition-transform"></i>
+            </button>
+            <div id="tagDropdown" class="hidden mt-1 bg-white dark:bg-instagram-700 rounded shadow-lg max-h-64 overflow-y-auto">
+              <div class="p-2 space-y-1">
+                <!-- Tags will be added here dynamically -->
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </div>
-    
-    <!-- Date filter bar (initially hidden) -->  
-    <div id="dateFilterBar" class="hidden overflow-x-auto no-scrollbar border-t border-instagram-200 dark:border-instagram-700 bg-white dark:bg-instagram-800">
-      <div class="flex space-x-6 px-4 py-2 whitespace-nowrap">
-        <button class="date-filter-active py-1 px-2 text-sm font-medium" data-filter="all">Todas</button>
-        <!-- Date filters will be added here dynamically -->
-      </div>
-    </div>
+  </div>
 
-    <!-- Tags filter bar (initially hidden) -->
-    <div id="tagsFilterBar" class="hidden overflow-x-auto no-scrollbar border-t border-instagram-200 dark:border-instagram-700 bg-white dark:bg-instagram-800">
-      <div class="flex space-x-6 px-4 py-2 whitespace-nowrap">
-        <!-- Tags will be added here dynamically -->
+  <!-- Overlay for sidebar -->
+  <div id="sidebarOverlay" class="fixed inset-0 bg-black/50 opacity-0 pointer-events-none transition-opacity duration-300 z-40"></div>
+
+  <!-- Upload Dialog -->
+  <div id="uploadDialog" class="fixed inset-0 z-50 bg-black/80 items-center justify-center hidden">
+    <div class="bg-white dark:bg-instagram-800 rounded-lg max-w-lg w-full mx-4 relative">
+      <button id="closeUploadDialog" class="absolute right-4 top-4 text-instagram-500 hover:text-instagram-700">
+        <i class="fa-solid fa-xmark text-xl"></i>
+      </button>
+      <div class="p-6 text-sm">
+        <h3 class="text-lg font-medium mb-4"><i class="fa-solid fa-upload mr-2"></i>Subir foto a la galería</h3>
+        <p class="mb-4">Se te va a redirigir al grupo de telegram de la comunidad, donde podrás subir tu foto, al hacerlo aceptas que:</p>
+        <ul class="list-disc pl-5 mb-6 space-y-2">
+          <li>Eres el autor/a de la misma</li>
+          <li>Se comparta con licencia <a class="underline" href="https://creativecommons.org/licenses/by-sa/4.0/deed.es">CC BY SA 4.0</a></li>
+          <li>Pueda usarse si te citan como autor/a</li>
+        </ul>
+        <p class="mb-6">Por favor añade una descripción y #etiquetas al enviar la foto</p>
+        <div class="flex justify-end">
+          <a href="https://t.me/AldeaPucela/27202/27203" target="_blank" class="bg-[#57316b] text-white px-6 py-2 rounded hover:bg-[#422454] transition-colors">
+            Entendido
+          </a>
+        </div>
       </div>
     </div>
-  </header>
+  </div>
 
   <!-- Tag filter indicator -->
     <div id="tagFilter" class="hidden fixed bottom-4 left-1/2 -translate-x-1/2 bg-instagram-600 text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2 z-50">
@@ -267,7 +313,7 @@
   </div>
 
   <!-- Load our JavaScript -->
-  <script src="js/script.js?202504171155"></script>
+  <script src="js/script.js?202504172016"></script>
   <!-- Load Matomo Analytics -->
   <script>
     var _paq = window._paq = window._paq || [];

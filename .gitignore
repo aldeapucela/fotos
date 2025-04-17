@@ -1,4 +1,5 @@
 files/*.jpg
 *.db
 tags-cache.json
+ai-tags-cache.json
 feed.xml
