@@ -680,6 +680,13 @@ initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1
             // Close sidebar after selection
             toggleSidebar();
           });
+          dateBtn.addEventListener('click', () => {
+            // Show date filter indicator
+            const dateFilter = document.getElementById('dateFilter');
+            const dateNameEl = document.getElementById('dateName');
+            dateNameEl.textContent = dateBtn.textContent;
+            dateFilter.classList.remove('hidden');
+          });
           dateFiltersContainer.appendChild(dateBtn);
         });
       }
@@ -1285,6 +1292,17 @@ document.addEventListener('DOMContentLoaded', () => {
       toggleSidebar();
     };
   });
+});
+
+// Clear date filter
+const clearDateFilterBtn = document.getElementById('clearDateFilterBtn');
+if (clearDateFilterBtn) clearDateFilterBtn.addEventListener('click', () => {
+  // Reset to all dates
+  const allDatesBtn = document.querySelector('[data-filter="all"]');
+  if (allDatesBtn) allDatesBtn.click();
+  // Hide date filter indicator
+  const dateFilter = document.getElementById('dateFilter');
+  if (dateFilter) dateFilter.classList.add('hidden');
 });
 
 // --- Funciones para etiquetas/index.html y elementos/index.html ---
