@@ -548,7 +548,7 @@ if (searchParam) {
 }
 
 // Initialize SQL.js and load the database
-initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${file}` }).then(async SQL => {
+initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.13.0/${file}` }).then(async SQL => {
   try {
     const response = await fetch('fotos.db');
     const buffer = await response.arrayBuffer();
