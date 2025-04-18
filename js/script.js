@@ -59,8 +59,8 @@ function searchPhotos(text) {
     const noResultsDiv = document.createElement('div');
     noResultsDiv.className = 'text-center py-20 text-instagram-500';
     noResultsDiv.textContent = `No hay fotos que contengan "${text}"`;
-    contenido.innerHTML = ''; // Clear previous content
-    contenido.appendChild(noResultsDiv);
+    if (contenido) contenido.innerHTML = ''; // Clear previous content
+    if (contenido) contenido.appendChild(noResultsDiv);
   }
 
   // Show search filter indicator
@@ -146,8 +146,8 @@ function filterByTag(event, tag, fromSidebar = false) {
     const noResultsDiv = document.createElement('div');
     noResultsDiv.className = 'text-center py-20 text-instagram-500';
     noResultsDiv.textContent = `No hay fotos con la etiqueta #${tag}`;
-    contenido.innerHTML = ''; // Clear previous content
-    contenido.appendChild(noResultsDiv);
+    if (contenido) contenido.innerHTML = ''; // Clear previous content
+    if (contenido) contenido.appendChild(noResultsDiv);
   }
 
   // Show tag filter indicator
@@ -217,8 +217,8 @@ function filterByElement(element) {
     const noResultsDiv = document.createElement('div');
     noResultsDiv.className = 'text-center py-20 text-instagram-500';
     noResultsDiv.textContent = `No hay fotos que contengan el elemento "${element}"`;
-    contenido.innerHTML = ''; // Clear previous content
-    contenido.appendChild(noResultsDiv);
+    if (contenido) contenido.innerHTML = ''; // Clear previous content
+    if (contenido) contenido.appendChild(noResultsDiv);
   }
 
   // Show element filter indicator
@@ -232,12 +232,29 @@ function filterByElement(element) {
 const lightbox = document.getElementById('lightbox');
 const lightboxImg = document.getElementById('lightbox-img');
 const lightboxDesc = document.getElementById('lightbox-desc');
-const lightboxAutor = document.getElementById('lightbox-autor').querySelector('span');
-const lightboxFecha = document.getElementById('lightbox-fecha').querySelector('span');
+const lightboxAutorEl = document.getElementById('lightbox-autor');
+const lightboxAutor = lightboxAutorEl ? lightboxAutorEl.querySelector('span') : null;
+const lightboxFechaEl = document.getElementById('lightbox-fecha');
+const lightboxFecha = lightboxFechaEl ? lightboxFechaEl.querySelector('span') : null;
 const lightboxLicense = document.getElementById('lightbox-license');
+
+// Helper: run only if lightbox exists
+function ifLightbox(fn) {
+  if (lightbox) fn();
+}
 const gridViewBtn = document.getElementById('gridViewBtn');
 const listViewBtn = document.getElementById('listViewBtn');
-const contenidoEl = document.getElementById('contenido');
+const contenido = document.getElementById('contenido');
+const contenidoEl = contenido; // Para compatibilidad con código previo
+
+function safeSetContenido(html) {
+  if (!contenido) {
+    console.warn("Elemento #contenido no existe en esta página. No se puede actualizar el contenido principal.");
+    return;
+  }
+  contenido.innerHTML = html;
+}
+
 const searchInput = document.getElementById('searchInput');
 
 // Variables para la navegación de fotos
@@ -256,17 +273,21 @@ if (searchInput) {
 }
 
 // Toggle view modes (grid vs list)
-gridViewBtn.addEventListener('click', () => {
-  contenidoEl.classList.remove('list-view');
-  gridViewBtn.classList.add('view-toggle-active');
-  listViewBtn.classList.remove('view-toggle-active');
-});
+if (gridViewBtn) {
+  gridViewBtn.addEventListener('click', () => {
+    contenidoEl.classList.remove('list-view');
+    gridViewBtn.classList.add('view-toggle-active');
+    if (listViewBtn) listViewBtn.classList.remove('view-toggle-active');
+  });
+}
 
-listViewBtn.addEventListener('click', () => {
-  contenidoEl.classList.add('list-view');
-  listViewBtn.classList.add('view-toggle-active');
-  gridViewBtn.classList.remove('view-toggle-active');
-});
+if (listViewBtn) {
+  listViewBtn.addEventListener('click', () => {
+    contenidoEl.classList.add('list-view');
+    listViewBtn.classList.add('view-toggle-active');
+    if (gridViewBtn) gridViewBtn.classList.remove('view-toggle-active');
+  });
+}
 
 // Open lightbox with photo details
 function openLightbox(imgSrc, data) {
@@ -459,19 +480,25 @@ function showNextPhoto() {
 }
 
 // Add navigation event listeners
-document.getElementById('prevPhoto').addEventListener('click', (e) => {
-  e.stopPropagation();
-  showPrevPhoto();
-});
+const prevPhotoBtn = document.getElementById('prevPhoto');
+if (prevPhotoBtn) {
+  prevPhotoBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    showPrevPhoto();
+  });
+}
 
-document.getElementById('nextPhoto').addEventListener('click', (e) => {
-  e.stopPropagation();
-  showNextPhoto();
-});
+const nextPhotoBtn = document.getElementById('nextPhoto');
+if (nextPhotoBtn) {
+  nextPhotoBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    showNextPhoto();
+  });
+}
 
 // Update keyboard navigation
 document.addEventListener('keydown', (e) => {
-  if (!lightbox.classList.contains('active')) return;
+  if (!lightbox || !lightbox.classList.contains('active')) return;
   
   switch (e.key) {
     case 'ArrowLeft':
@@ -492,58 +519,33 @@ let startY;
 let isDragging = false;
 const MIN_SWIPE_DISTANCE = 50;
 
-lightbox.addEventListener('touchstart', (e) => {
-  // Solo registramos el inicio del toque si es un solo dedo
-  if (e.touches.length === 1) {
-    startY = e.touches[0].clientY;
-    startX = e.touches[0].clientX;
-    isDragging = true;
-  }
-});
-
-lightbox.addEventListener('touchmove', (e) => {
-  // Solo manejamos el gesto de deslizar si es un solo dedo
-  if (e.touches.length === 1 && isDragging) {
-    const currentX = e.touches[0].clientX;
-    const currentY = e.touches[0].clientY;
-    const diffX = currentX - startX;
-    const diffY = currentY - startY;
-    
-    if (Math.abs(diffX) > Math.abs(diffY)) {
-      // Navegación horizontal
-      if (Math.abs(diffX) > MIN_SWIPE_DISTANCE) {
-        if (diffX > 0 && currentPhotoIndex > 0) {
-          showPrevPhoto();
-          isDragging = false;
-        } else if (diffX < 0 && currentPhotoIndex < visiblePhotos.length - 1) {
-          showNextPhoto();
-          isDragging = false;
-        }
-      }
-    } else if (Math.abs(diffY) > MIN_SWIPE_DISTANCE) {
-      // Cerrar solo con deslizamiento vertical
-      closeLightbox();
-      isDragging = false;
+ifLightbox(() => {
+  lightbox.addEventListener('touchstart', (e) => {
+    // Solo registramos el inicio del toque si es un solo dedo
+    if (e.touches.length === 1) {
+      startY = e.touches[0].clientY;
+      startX = e.touches[0].clientX;
+      isDragging = true;
     }
-  }
+  });
 });
 
-lightbox.addEventListener('touchend', () => {
-  isDragging = false;
-});
 
 // Close lightbox
 function closeLightbox() {
+  if (!lightbox) return;
   lightbox.classList.remove('active');
   document.body.style.overflow = '';
   updateUrl('');
   setTimeout(() => {
-    lightboxImg.src = '';
+    if (lightboxImg) lightboxImg.src = '';
   }, 300);
 }
 
-lightbox.addEventListener('click', (e) => {
-  if (e.target === lightbox) closeLightbox();
+ifLightbox(() => {
+  lightbox.addEventListener('click', (e) => {
+    if (e.target === lightbox) closeLightbox();
+  });
 });
 
 // Gestos táctiles para el lightbox
@@ -568,12 +570,12 @@ if (searchParam) {
 // Initialize SQL.js and load the database
 initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.13.0/${file}` }).then(async SQL => {
   try {
-    const response = await fetch('fotos.db');
+    const response = await fetch('/fotos.db');
     const buffer = await response.arrayBuffer();
     const db = new SQL.Database(new Uint8Array(buffer));
     
     // Load tags from cache
-    const tagsResponse = await fetch('tags-cache.json');
+    const tagsResponse = await fetch('/tags-cache.json');
     const tagsData = await tagsResponse.json();
     
     // Add tags to the sidebar filters (in tag dropdown)
@@ -604,7 +606,7 @@ initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1
     `);
     
     const contenido = document.getElementById('contenido');
-    contenido.innerHTML = '';
+    if (contenido) contenido.innerHTML = '';
 
     // Ensure paths point to /files/ subdirectory
     function getImagePath(path) {
@@ -835,7 +837,7 @@ initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1
 
         grupo.appendChild(fechaHeader);
         grupo.appendChild(grid);
-        contenido.appendChild(grupo);
+        if (contenido) contenido.appendChild(grupo);
       });
 
       // Check URL parameters and handle based on order:
@@ -864,58 +866,56 @@ initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1
       }
 
     } else {
-      contenido.innerHTML = '<div class="text-center py-20 text-instagram-500">No hay fotos para mostrar</div>';
+      safeSetContenido('<div class="text-center py-20 text-instagram-500">No hay fotos para mostrar</div>');
     }
   } catch (error) {
     console.error('Error al cargar la galería:', error);
-    contenido.innerHTML = '<div class="text-center py-20 text-instagram-500">Error al cargar la galería</div>';
+    safeSetContenido('<div class=\"text-center py-20 text-instagram-500\">Error al cargar la galería</div>');
   }
 });
 
 // Handle lightbox gestures
-lightbox.addEventListener('touchstart', (e) => {
-  // Solo registramos el inicio del toque si es un solo dedo
-  if (e.touches.length === 1) {
-    startY = e.touches[0].clientY;
-    startX = e.touches[0].clientX;
-    isDragging = true;
-  }
-});
-
-lightbox.addEventListener('touchmove', (e) => {
-  // Solo manejamos el gesto de deslizar si es un solo dedo
-  if (e.touches.length === 1 && isDragging) {
-    const currentX = e.touches[0].clientX;
-    const currentY = e.touches[0].clientY;
-    const diffX = currentX - startX;
-    const diffY = currentY - startY;
-    
-    if (Math.abs(diffX) > Math.abs(diffY)) {
-      // Navegación horizontal
-      if (Math.abs(diffX) > MIN_SWIPE_DISTANCE) {
-        if (diffX > 0 && currentPhotoIndex > 0) {
-          showPrevPhoto();
-          isDragging = false;
-        } else if (diffX < 0 && currentPhotoIndex < visiblePhotos.length - 1) {
-          showNextPhoto();
-          isDragging = false;
-        }
-      }
-    } else if (Math.abs(diffY) > MIN_SWIPE_DISTANCE) {
-      // Cerrar solo con deslizamiento vertical
-      closeLightbox();
-      isDragging = false;
+ifLightbox(() => {
+  lightbox.addEventListener('touchstart', (e) => {
+    // Solo registramos el inicio del toque si es un solo dedo
+    if (e.touches.length === 1) {
+      startY = e.touches[0].clientY;
+      startX = e.touches[0].clientX;
+      isDragging = true;
     }
-  }
-});
-
-lightbox.addEventListener('touchend', () => {
-  isDragging = false;
-});
-
-// Close lightbox when clicking outside the content
-lightbox.addEventListener('click', (e) => {
-  if (e.target === lightbox) closeLightbox();
+  });
+  lightbox.addEventListener('touchmove', (e) => {
+    // Solo manejamos el gesto de deslizar si es un solo dedo
+    if (e.touches.length === 1 && isDragging) {
+      const currentX = e.touches[0].clientX;
+      const currentY = e.touches[0].clientY;
+      const diffX = currentX - startX;
+      const diffY = currentY - startY;
+      
+      if (Math.abs(diffX) > Math.abs(diffY)) {
+        // Navegación horizontal
+        if (Math.abs(diffX) > MIN_SWIPE_DISTANCE) {
+          if (diffX > 0 && currentPhotoIndex > 0) {
+            showPrevPhoto();
+            isDragging = false;
+          } else if (diffX < 0 && currentPhotoIndex < visiblePhotos.length - 1) {
+            showNextPhoto();
+            isDragging = false;
+          }
+        }
+      } else if (Math.abs(diffY) > MIN_SWIPE_DISTANCE) {
+        // Cerrar solo con deslizamiento vertical
+        closeLightbox();
+        isDragging = false;
+      }
+    }
+  });
+  lightbox.addEventListener('touchend', () => {
+    isDragging = false;
+  });
+  lightbox.addEventListener('click', (e) => {
+    if (e.target === lightbox) closeLightbox();
+  });
 });
 
 // Handle browser back/forward
@@ -1002,47 +1002,42 @@ const uploadDialog = document.getElementById('uploadDialog');
 const uploadPhotoBtns = document.getElementsByClassName('uploadPhotoBtn'); // Renombrado a plural para claridad
 const closeUploadDialog = document.getElementById('closeUploadDialog');
 
-// Iterar sobre todos los botones con la clase 'uploadPhotoBtn'
-for (let i = 0; i < uploadPhotoBtns.length; i++) {
-  uploadPhotoBtns[i].addEventListener('click', (e) => {
-    e.preventDefault();
-    uploadDialog.classList.remove('hidden');
-    uploadDialog.classList.add('flex');
-  });
-}
-
-// El resto del código para cerrar el diálogo (si existe) permanece igual
-if (closeUploadDialog) {
-    closeUploadDialog.addEventListener('click', () => {
-        uploadDialog.classList.add('hidden');
-        uploadDialog.classList.remove('flex');
+// Solo si existe el diálogo de subida
+if (uploadDialog) {
+  // Iterar sobre todos los botones con la clase 'uploadPhotoBtn'
+  for (let i = 0; i < uploadPhotoBtns.length; i++) {
+    uploadPhotoBtns[i].addEventListener('click', (e) => {
+      e.preventDefault();
+      uploadDialog.classList.remove('hidden');
+      uploadDialog.classList.add('flex');
     });
-}
+  }
 
-// Añadir funcionalidad para cerrar el diálogo haciendo clic fuera de él
-uploadDialog.addEventListener('click', (e) => {
+  // Listener para cerrar con el botón de cerrar
+  if (closeUploadDialog) {
+    closeUploadDialog.addEventListener('click', () => {
+      uploadDialog.classList.add('hidden');
+      uploadDialog.classList.remove('flex');
+    });
+  }
+
+  // Añadir funcionalidad para cerrar el diálogo haciendo clic fuera de él
+  uploadDialog.addEventListener('click', (e) => {
     // Si el clic fue directamente sobre el fondo del diálogo (no en sus hijos)
     if (e.target === uploadDialog) {
-        uploadDialog.classList.add('hidden');
-        uploadDialog.classList.remove('flex');
+      uploadDialog.classList.add('hidden');
+      uploadDialog.classList.remove('flex');
     }
-});
+  });
 
-// Evitar que el clic dentro del contenido del diálogo lo cierre
-const uploadDialogContent = uploadDialog.querySelector('div'); // Asumiendo que el contenido está en un div
-if (uploadDialogContent) {
+  // Evitar que el clic dentro del contenido del diálogo lo cierre
+  const uploadDialogContent = uploadDialog.querySelector('div'); // Asumiendo que el contenido está en un div
+  if (uploadDialogContent) {
     uploadDialogContent.addEventListener('click', (e) => {
-        e.stopPropagation(); // Detiene la propagación del evento al contenedor padre (uploadDialog)
+      e.stopPropagation(); // Detiene la propagación del evento al contenedor padre (uploadDialog)
     });
-}
-
-// Close dialog when clicking outside
-uploadDialog.addEventListener('click', (e) => {
-  if (e.target === uploadDialog) {
-    uploadDialog.classList.remove('flex');
-    uploadDialog.classList.add('hidden');
   }
-});
+}
 
 // On page load, check both tag and photo ID
 window.addEventListener('load', () => {
@@ -1136,22 +1131,28 @@ const menuToggle = document.getElementById('menuToggle');
 const closeSidebar = document.getElementById('closeSidebar');
 
 function toggleSidebar() {
+  if (!sidebar || !sidebarOverlay) return;
   sidebar.classList.toggle('active');
   sidebarOverlay.classList.toggle('active');
   document.body.classList.toggle('overflow-hidden');
-  
   // Close dropdowns when closing sidebar
   if (!sidebar.classList.contains('active')) {
-    dateDropdown.classList.add('hidden');
-    tagDropdown.classList.add('hidden');
-    dateDropdownButton.querySelector('.fa-chevron-down').style.transform = '';
-    tagDropdownButton.querySelector('.fa-chevron-down').style.transform = '';
+    if (dateDropdown) dateDropdown.classList.add('hidden');
+    if (tagDropdown) tagDropdown.classList.add('hidden');
+    if (dateDropdownButton) {
+      const icon = dateDropdownButton.querySelector('.fa-chevron-down');
+      if (icon) icon.style.transform = '';
+    }
+    if (tagDropdownButton) {
+      const icon = tagDropdownButton.querySelector('.fa-chevron-down');
+      if (icon) icon.style.transform = '';
+    }
   }
 }
 
-menuToggle.addEventListener('click', toggleSidebar);
-closeSidebar.addEventListener('click', toggleSidebar);
-sidebarOverlay.addEventListener('click', toggleSidebar);
+if (menuToggle) menuToggle.addEventListener('click', toggleSidebar);
+if (closeSidebar) closeSidebar.addEventListener('click', toggleSidebar);
+if (sidebarOverlay) sidebarOverlay.addEventListener('click', toggleSidebar);
 
 // Close sidebar with escape key
 document.addEventListener('keydown', (e) => {
@@ -1166,35 +1167,79 @@ const tagDropdownButton = document.getElementById('tagDropdownButton');
 const dateDropdown = document.getElementById('dateDropdown');
 const tagDropdown = document.getElementById('tagDropdown');
 
+// Definir dateDropdownOptions solo si existe dateDropdown
+const dateDropdownOptions = dateDropdown ? dateDropdown.querySelectorAll('[data-filter]') : null;
+
 function toggleDropdown(dropdown, button) {
+  if (!dropdown || !button) return;
   const isOpen = dropdown.classList.contains('hidden');
-  
   // Close other dropdown first
   if (dropdown === dateDropdown) {
-    tagDropdown.classList.add('hidden');
-    tagDropdownButton.querySelector('.fa-chevron-down').style.transform = '';
+    if (tagDropdown) tagDropdown.classList.add('hidden');
+    if (tagDropdownButton) {
+      const icon = tagDropdownButton.querySelector('.fa-chevron-down');
+      if (icon) icon.style.transform = '';
+    }
   } else {
-    dateDropdown.classList.add('hidden');
-    dateDropdownButton.querySelector('.fa-chevron-down').style.transform = '';
+    if (dateDropdown) dateDropdown.classList.add('hidden');
+    if (dateDropdownButton) {
+      const icon = dateDropdownButton.querySelector('.fa-chevron-down');
+      if (icon) icon.style.transform = '';
+    }
   }
-  
   // Toggle current dropdown
   dropdown.classList.toggle('hidden');
-  button.querySelector('.fa-chevron-down').style.transform = isOpen ? 'rotate(180deg)' : '';
+  const icon = button.querySelector('.fa-chevron-down');
+  if (icon) icon.style.transform = isOpen ? 'rotate(180deg)' : '';
 }
 
-dateDropdownButton.addEventListener('click', () => toggleDropdown(dateDropdown, dateDropdownButton));
-tagDropdownButton.addEventListener('click', () => toggleDropdown(tagDropdown, tagDropdownButton));
+if (dateDropdownButton && dateDropdown) {
+  dateDropdownButton.addEventListener('click', () => toggleDropdown(dateDropdown, dateDropdownButton));
+}
+
+if (dateDropdownOptions && dateDropdownOptions.forEach) {
+  dateDropdownOptions.forEach(option => {
+    option.addEventListener('click', (e) => {
+      if (dateDropdownButton && dateDropdown) {
+        dateDropdownButton.textContent = e.target.textContent;
+        dateDropdown.classList.add('hidden');
+      }
+    });
+  });
+}
 
 // Close dropdowns when clicking outside
 document.addEventListener('click', (e) => {
-  if (!dateDropdownButton.contains(e.target) && !dateDropdown.contains(e.target)) {
-    dateDropdown.classList.add('hidden');
-    dateDropdownButton.querySelector('.fa-chevron-down').style.transform = '';
+  if (!sidebar) return;
+  if (sidebar.classList.contains('active')) {
+    if (
+      !sidebar.contains(e.target) &&
+      (!menuToggle || !menuToggle.contains(e.target)) &&
+      (!closeSidebar || !closeSidebar.contains(e.target))
+    ) {
+      toggleSidebar();
+    }
   }
-  if (!tagDropdownButton.contains(e.target) && !tagDropdown.contains(e.target)) {
+  // Close dropdowns if clicking outside
+  if (
+    dateDropdown &&
+    !dateDropdown.contains(e.target) &&
+    dateDropdownButton &&
+    !dateDropdownButton.contains(e.target)
+  ) {
+    dateDropdown.classList.add('hidden');
+    const icon = dateDropdownButton.querySelector('.fa-chevron-down');
+    if (icon) icon.style.transform = '';
+  }
+  if (
+    tagDropdown &&
+    !tagDropdown.contains(e.target) &&
+    tagDropdownButton &&
+    !tagDropdownButton.contains(e.target)
+  ) {
     tagDropdown.classList.add('hidden');
-    tagDropdownButton.querySelector('.fa-chevron-down').style.transform = '';
+    const icon = tagDropdownButton.querySelector('.fa-chevron-down');
+    if (icon) icon.style.transform = '';
   }
 });
 
@@ -1218,4 +1263,93 @@ document.addEventListener('DOMContentLoaded', () => {
       toggleSidebar();
     };
   });
+});
+
+// --- Funciones para etiquetas/index.html y elementos/index.html ---
+
+// Cargar etiquetas en etiquetas/index.html
+async function loadTags() {
+  try {
+    const tagsList = document.getElementById('tags-list');
+    if (!tagsList) return;
+    const response = await fetch('/tags-cache.json');
+    const data = await response.json();
+    data.tags.forEach(({tag, count, latest_photos}) => {
+      const tagEl = document.createElement('a');
+      tagEl.href = `/?tag=${tag.substring(1)}`;
+      tagEl.className = 'tag-card bg-white dark:bg-instagram-800 rounded-lg shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5';
+      tagEl.onclick = (e) => {
+        e.preventDefault();
+        window.location.href = tagEl.href;
+      };
+      // Collage de fotos
+      const photoCollage = latest_photos.length > 0 
+        ? `<div class=\"photo-collage\">\n${latest_photos.map(photo => `\n<img src=\"/files/${photo}\" loading=\"lazy\" class=\"opacity-60 transition-opacity duration-300\" alt=\"\">`).join('')}\n</div>`
+        : '';
+      tagEl.innerHTML = `
+        <div class="p-3">
+          <div class="flex items-center justify-between">
+            <div>
+              <span class="text-lg font-medium text-instagram-600 dark:text-instagram-400">${tag}</span>
+              <span class="ml-2 text-sm text-instagram-500">${count} foto${count !== 1 ? 's' : ''}</span>
+            </div>
+            <i class="fa-solid fa-chevron-right text-instagram-400"></i>
+          </div>
+        </div>
+        ${photoCollage}
+      `;
+      tagsList.appendChild(tagEl);
+    });
+  } catch (error) {
+    console.error('Error loading tags:', error);
+  }
+}
+
+// Cargar elementos en elementos/index.html
+async function loadElements() {
+  try {
+    const elementsList = document.getElementById('elements-list');
+    if (!elementsList) return;
+    const response = await fetch('/ai-tags-cache.json');
+    const data = await response.json();
+    data.tags.forEach(({tag, count, latest_photos}) => {
+      const elementEl = document.createElement('a');
+      elementEl.href = `/?element=${encodeURIComponent(tag)}`;
+      elementEl.className = 'element-card bg-white dark:bg-instagram-800 rounded-lg shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5';
+      elementEl.onclick = (e) => {
+        e.preventDefault();
+        window.location.href = elementEl.href;
+      };
+      // Collage de fotos
+      const photoCollage = latest_photos.length > 0 
+        ? `<div class=\"photo-collage\">\n${latest_photos.map(photo => `\n<img src=\"/files/${photo}\" loading=\"lazy\" class=\"opacity-60 transition-opacity duration-300\" alt=\"\">`).join('')}\n</div>`
+        : '';
+      elementEl.innerHTML = `
+        <div class="p-3">
+          <div class="flex items-center justify-between">
+            <div>
+              <span class="text-lg font-medium text-instagram-600 dark:text-instagram-400">${tag}</span>
+              <span class="ml-2 text-sm text-instagram-500">${count} foto${count !== 1 ? 's' : ''}</span>
+            </div>
+            <i class="fa-solid fa-chevron-right text-instagram-400"></i>
+          </div>
+        </div>
+        ${photoCollage}
+      `;
+      elementsList.appendChild(elementEl);
+    });
+  } catch (error) {
+    console.error('Error loading elements:', error);
+  }
+}
+
+// Ejecutar solo en la página correcta cuando el DOM esté listo
+
+document.addEventListener('DOMContentLoaded', function () {
+  if (document.getElementById('tags-list')) {
+    loadTags();
+  }
+  if (document.getElementById('elements-list')) {
+    loadElements();
+  }
 });

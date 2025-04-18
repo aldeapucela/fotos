@@ -21,30 +21,8 @@
   <link rel="alternate" type="application/rss+xml" title="Fotos de Valladolid - Aldea Pucela" href="/feed.xml" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
   <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'media',
-      theme: {
-        extend: {
-          colors: {
-            instagram: {
-              50: '#fafafa',
-              100: '#f5f5f5',
-              200: '#e5e5e5',
-              300: '#d4d4d4',
-              400: '#a3a3a3',
-              500: '#737373',
-              600: '#525252',
-              700: '#404040',
-              800: '#262626',
-              900: '#171717',
-              950: '#0a0a0a',
-            }
-          }
-        }
-      }
-    }
-  </script>
+  <script src="../js/tailwind-config.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.13.0/sql-wasm.js" integrity="sha512-Yra4xuTWinXfBpG2ftgDX8MVmMiOev1FtqiYs51+kEna/5peD0kZqAL1syYCH61f9gxmAFidIJz42IKcRhWMkw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <style>
     .photo-collage {
       display: grid;
@@ -94,66 +72,10 @@
     </div>
   </main>
 
-  <script>
-    async function loadTags() {
-      try {
-        const response = await fetch('../tags-cache.json');
-        const data = await response.json();
-        const tagsList = document.getElementById('tags-list');
-        
-        data.tags.forEach(({tag, count, latest_photos}) => {
-          const tagEl = document.createElement('a');
-          tagEl.href = `/?tag=${tag.substring(1)}`;
-          tagEl.className = 'tag-card bg-white dark:bg-instagram-800 rounded-lg shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5';
-          tagEl.onclick = (e) => {
-            e.preventDefault();
-            window.location.href = tagEl.href;
-          };
-          
-          // Create photo collage with smaller images
-          const photoCollage = latest_photos.length > 0 
-            ? `<div class="photo-collage">
-                ${latest_photos.map(photo => `
-                  <img src="/files/${photo}" loading="lazy" 
-                       class="opacity-60 transition-opacity duration-300"
-                       alt="">
-                `).join('')}
-               </div>`
-            : '';
-            
-          tagEl.innerHTML = `
-            <div class="p-3">
-              <div class="flex items-center justify-between">
-                <div>
-                  <span class="text-lg font-medium text-instagram-600 dark:text-instagram-400">${tag}</span>
-                  <span class="ml-2 text-sm text-instagram-500">${count} foto${count !== 1 ? 's' : ''}</span>
-                </div>
-                <i class="fa-solid fa-chevron-right text-instagram-400"></i>
-              </div>
-            </div>
-            ${photoCollage}
-          `;
-          tagsList.appendChild(tagEl);
-        });
-      } catch (error) {
-        console.error('Error loading tags:', error);
-      }
-    }
-
-    loadTags();
-  </script>
+  <!-- Load DOMPurify (for security) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.2.5/purify.min.js" integrity="sha512-/CUtA84sWWqWEBejNrrtWa7Yc4cth3Ome2ymvCKOo9YcZ4sh98tndUy4LutE2xGcAgD4fyz16y+gSyJdGCB5ww==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="/js/script.js"></script>
   <!-- Load Matomo Analytics -->
-  <script>
-    var _paq = window._paq = window._paq || [];
-    _paq.push(['trackPageView']);
-    _paq.push(['enableLinkTracking']);
-    (function() {
-        var u="https://stats.aldeapucela.org/";
-        _paq.push(['setTrackerUrl', u+'matomo.php']);
-        _paq.push(['setSiteId', '14']);
-        var d=document, g=d.createElement('script'), s=d.getElementsByTagName('script')[0];
-        g.async=true; g.src=u+'matomo.js'; s.parentNode.insertBefore(g,s);
-    })();
-  </script>
+  <script src="../js/matomo.js"></script>
 </body>
 </html>
