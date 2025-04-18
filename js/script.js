@@ -1169,6 +1169,8 @@ const tagDropdown = document.getElementById('tagDropdown');
 
 // Definir dateDropdownOptions solo si existe dateDropdown
 const dateDropdownOptions = dateDropdown ? dateDropdown.querySelectorAll('[data-filter]') : null;
+// Definir tagDropdownOptions solo si existe tagDropdown
+const tagDropdownOptions = tagDropdown ? tagDropdown.querySelectorAll('[data-filter]') : null;
 
 function toggleDropdown(dropdown, button) {
   if (!dropdown || !button) return;
@@ -1197,12 +1199,33 @@ if (dateDropdownButton && dateDropdown) {
   dateDropdownButton.addEventListener('click', () => toggleDropdown(dateDropdown, dateDropdownButton));
 }
 
+if (tagDropdownButton && tagDropdown) {
+  tagDropdownButton.addEventListener('click', () => toggleDropdown(tagDropdown, tagDropdownButton));
+}
+
 if (dateDropdownOptions && dateDropdownOptions.forEach) {
   dateDropdownOptions.forEach(option => {
     option.addEventListener('click', (e) => {
       if (dateDropdownButton && dateDropdown) {
         dateDropdownButton.textContent = e.target.textContent;
         dateDropdown.classList.add('hidden');
+        // Reset chevron
+        const icon = dateDropdownButton.querySelector('.fa-chevron-down');
+        if (icon) icon.style.transform = '';
+      }
+    });
+  });
+}
+
+if (tagDropdownOptions && tagDropdownOptions.forEach) {
+  tagDropdownOptions.forEach(option => {
+    option.addEventListener('click', (e) => {
+      if (tagDropdownButton && tagDropdown) {
+        tagDropdownButton.textContent = e.target.textContent;
+        tagDropdown.classList.add('hidden');
+        // Reset chevron
+        const icon = tagDropdownButton.querySelector('.fa-chevron-down');
+        if (icon) icon.style.transform = '';
       }
     });
   });
