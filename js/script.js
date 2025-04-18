@@ -85,11 +85,17 @@ function clearSearch() {
 }
 
 // Convert hashtags to links
-function convertHashtagsToLinks(text) {
+function convertHashtagsToLinks(text, isLightbox = false) {
   if (!text) return '';
   return text.replace(/#([áéíóúüñÁÉÍÓÚÜÑa-zA-Z0-9_]+)/g, (match, tag) => {
     const normalizedTag = tag.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-    return `<a href="?tag=${normalizedTag}" class="text-instagram-600 dark:text-instagram-400 hover:underline" onclick="filterByTag(event, '${normalizedTag}')">${match}</a>`;
+    if (isLightbox) {
+      // For lightbox, add data-tag and class, remove onclick
+      return `<a href="?tag=${normalizedTag}" class="tag-link-lightbox text-instagram-600 dark:text-instagram-400 hover:underline" data-tag="${normalizedTag}">${match}</a>`;
+    } else {
+      // For main page grid/list view, keep onclick
+      return `<a href="?tag=${normalizedTag}" class="text-instagram-600 dark:text-instagram-400 hover:underline" onclick="filterByTag(event, '${normalizedTag}')">${match}</a>`;
+    }
   });
 }
 
@@ -308,9 +314,21 @@ function openLightbox(imgSrc, data) {
     lightboxContent.insertBefore(inappropriateDiv, lightboxImg);
   }
 
-  // Sanitize the description HTML before inserting it
-  const descriptionHtml = data.description ? convertHashtagsToLinks(data.description) : '';
-  lightboxDesc.innerHTML = DOMPurify.sanitize(descriptionHtml);
+  // Sanitize the description HTML before inserting it (pass true for isLightbox)
+  const descriptionHtml = data.description ? convertHashtagsToLinks(data.description, true) : '';
+  lightboxDesc.innerHTML = DOMPurify.sanitize(descriptionHtml, { ADD_ATTR: ['data-tag'] }); // Allow data-tag attribute
+
+  // Add delegated event listener for tag links within the lightbox description
+  lightboxDesc.addEventListener('click', (e) => {
+    if (e.target.classList.contains('tag-link-lightbox')) {
+      e.preventDefault(); // Prevent default link navigation
+      e.stopPropagation(); // Stop event bubbling
+      const tag = e.target.dataset.tag;
+      if (tag) {
+        filterByTag(e, tag); // Call filterByTag without 'fromSidebar'
+      }
+    }
+  });
 
   // Create Telegram URL
   const filename = data.path?.split('/').pop() || '';
@@ -778,7 +796,7 @@ initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1
                   }
                 </div>
               </div>
-              ${data.description ? `<p class="text-sm text-instagram-500 line-clamp-2">${DOMPurify.sanitize(convertHashtagsToLinks(data.description))}</p>` : ''}
+              ${data.description ? `<p class="text-sm text-instagram-500 line-clamp-2">${DOMPurify.sanitize(convertHashtagsToLinks(data.description, false))}</p>` : ''} 
               <div class="mt-2 flex justify-between items-center text-instagram-400 text-lg">
                 <div class="actions" onclick="event.stopPropagation()">
                   <button type="button" class="share-button hover:text-instagram-600 mr-3" 
