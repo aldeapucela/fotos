@@ -620,16 +620,35 @@ initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1
       const cols = res[0].columns;
       const rows = res[0].values;
       
-      // Process data and group by date
+      // Agrupar datos por semana (lunes a domingo)
+      function getWeekRange(dateStr) {
+        const d = new Date(dateStr);
+        const day = d.getDay(); // 0 (domingo) ... 6 (sábado)
+        // Calcular el lunes de la semana
+        const monday = new Date(d);
+        monday.setDate(d.getDate() - ((day + 6) % 7));
+        monday.setHours(0,0,0,0);
+        // Calcular el domingo de la semana
+        const sunday = new Date(monday);
+        sunday.setDate(monday.getDate() + 6);
+        sunday.setHours(23,59,59,999);
+        return {
+          start: monday,
+          end: sunday,
+          key: `${monday.getFullYear()}-${String(monday.getMonth()+1).padStart(2,'0')}-${String(monday.getDate()).padStart(2,'0')}_${sunday.getFullYear()}-${String(sunday.getMonth()+1).padStart(2,'0')}-${String(sunday.getDate()).padStart(2,'0')}`,
+          label: `${monday.getDate()} ${monday.toLocaleString('es', {month:'long'})} - ${sunday.getDate()} ${sunday.toLocaleString('es', {month:'long'})} ${sunday.getFullYear()}`
+        };
+      }
+      // Agrupar por semana
       const grupos = rows.reduce((acc, row) => {
         const data = Object.fromEntries(cols.map((col, i) => [col, row[i]]));
-        const fecha = data.fecha_grupo;
-        if (!acc[fecha]) acc[fecha] = [];
-        acc[fecha].push(data);
+        const week = getWeekRange(data.fecha_grupo);
+        if (!acc[week.key]) acc[week.key] = {label: week.label, fotos: []};
+        acc[week.key].fotos.push(data);
         return acc;
       }, {});
 
-      // Add date filters to the date dropdown
+      // Add week filters to the date dropdown
       const dateFiltersContainer = document.querySelector('#dateDropdown .space-y-1');
       if (dateFiltersContainer) {
         // Definir función para resetear filtros de fecha
@@ -653,15 +672,11 @@ initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1
           allDatesBtn.onclick = resetDateFilter;
         }
 
-        Object.keys(grupos).forEach(fecha => {
+        Object.entries(grupos).forEach(([semanaKey, semanaObj]) => {
           const dateBtn = document.createElement('button');
           dateBtn.className = 'w-full text-left py-1.5 px-3 text-sm rounded hover:bg-instagram-100 dark:hover:bg-instagram-600 text-instagram-500';
-          dateBtn.dataset.filter = fecha;
-          dateBtn.textContent = new Date(fecha).toLocaleDateString('es', {
-            day: 'numeric',
-            month: 'short',
-            year: 'numeric'
-          });
+          dateBtn.dataset.filter = semanaKey;
+          dateBtn.textContent = semanaObj.label;
           dateBtn.addEventListener('click', () => {
             // Update active state
             document.querySelectorAll('[data-filter]').forEach(b => b.classList.remove('filter-active'));
@@ -709,27 +724,22 @@ initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1
       });
 
       // Render photo groups by date
-      Object.entries(grupos).forEach(([fecha, fotos]) => {
+      Object.entries(grupos).forEach(([semanaKey, semanaObj]) => {
         const grupo = document.createElement('div');
         grupo.className = 'date-group mb-8';
-        grupo.dataset.date = fecha;
+        grupo.dataset.date = semanaKey;
         
-        // Date header
+        // Semana header
         const fechaHeader = document.createElement('div');
         fechaHeader.className = 'sticky top-[60px] bg-white/90 dark:bg-instagram-800/90 backdrop-blur-sm py-2 px-4 mb-4 font-medium text-sm border-b border-instagram-200 dark:border-instagram-700 z-10';
-        fechaHeader.textContent = new Date(fecha).toLocaleDateString('es', {
-          weekday: 'long',
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric'
-        });
+        fechaHeader.textContent = semanaObj.label;
         
         // Photo grid
         const grid = document.createElement('div');
         grid.className = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-1 sm:gap-1 px-2';
 
         // Create photo cards
-        fotos.forEach(data => {
+        semanaObj.fotos.forEach(data => {
           const item = document.createElement('div');
           item.className = 'photo-card bg-white dark:bg-instagram-800 rounded-sm shadow-sm overflow-hidden transform transition-transform hover:shadow-md active:scale-[0.98]';
           
