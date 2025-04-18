@@ -530,7 +530,6 @@ ifLightbox(() => {
   });
 });
 
-
 // Close lightbox
 function closeLightbox() {
   if (!lightbox) return;
@@ -761,7 +760,7 @@ initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1
           // Create photo card HTML
           const photoCardHtml = isAppropriate ? `
             <div class="photo-card-image relative pb-[100%] bg-instagram-100 dark:bg-instagram-700">
-              <img data-src="${fullPath}" alt="${data.ai_description || data.description || ''}" 
+              <img loading="lazy" data-src="${fullPath}" alt="${data.ai_description || data.description || ''}" 
                    class="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-300">
             </div>
           ` : `
