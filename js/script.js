@@ -94,7 +94,7 @@ function convertHashtagsToLinks(text, isLightbox = false) {
       return `<a href="?tag=${normalizedTag}" class="tag-link-lightbox text-instagram-600 dark:text-instagram-400 hover:underline" data-tag="${normalizedTag}">${match}</a>`;
     } else {
       // For main page grid/list view, keep onclick
-      return `<a href="?tag=${normalizedTag}" class="text-instagram-600 dark:text-instagram-400 hover:underline" onclick="filterByTag(event, '${normalizedTag}')">${match}</a>`;
+      return `<a href="?tag=${normalizedTag}" class="tag-link text-instagram-600 dark:text-instagram-400 hover:underline" data-tag="${normalizedTag}">${match}</a>`;
     }
   });
 }
@@ -798,9 +798,9 @@ initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1
               </div>
               ${data.description ? `<p class="text-sm text-instagram-500 line-clamp-2">${DOMPurify.sanitize(convertHashtagsToLinks(data.description, false))}</p>` : ''} 
               <div class="mt-2 flex justify-between items-center text-instagram-400 text-lg">
-                <div class="actions" onclick="event.stopPropagation()">
+                <div class="actions">
                   <button type="button" class="share-button hover:text-instagram-600 mr-3" 
-                          onclick="sharePhoto('${telegramId}', '${data.description?.replace(/'/g, "\\'")}')" 
+                          class="share-button hover:text-instagram-600 mr-3" data-telegram-id="${telegramId}" data-description="${encodeURIComponent(data.description || '')}" 
                           title="Compartir">
                     <i class="fa-solid fa-share-nodes"></i>
                   </button>
@@ -1074,6 +1074,60 @@ window.addEventListener('load', () => {
         }, 500);
     }
 });
+
+// Delegación de eventos para enlaces de hashtags
+
+document.addEventListener('click', function(e) {
+  const tagLink = e.target.closest('a.tag-link');
+  if (tagLink) {
+    e.preventDefault();
+    const tag = tagLink.dataset.tag;
+    filterByTag(e, tag);
+  }
+});
+
+// Delegación de eventos para botones de compartir foto
+
+document.addEventListener('click', function(e) {
+  // Detener propagación en clicks dentro de .actions
+  const actionsDiv = e.target.closest('.actions');
+  if (actionsDiv && actionsDiv.contains(e.target)) {
+    e.stopPropagation();
+  }
+
+  // Compartir foto
+  const shareBtn = e.target.closest('button.share-button');
+  if (shareBtn) {
+    e.preventDefault();
+    const telegramId = shareBtn.dataset.telegramId;
+    const description = decodeURIComponent(shareBtn.dataset.description || '');
+    sharePhoto(telegramId, description);
+  }
+});
+
+// Event listeners migrados desde onclick inline
+
+// Compartir general (varios botones)
+const shareGeneralBtn1 = document.getElementById('shareGeneralBtn1');
+if (shareGeneralBtn1) shareGeneralBtn1.addEventListener('click', shareGeneral);
+const shareGeneralBtn2 = document.getElementById('shareGeneralBtn2');
+if (shareGeneralBtn2) shareGeneralBtn2.addEventListener('click', shareGeneral);
+
+// Compartir colección de tags
+const shareTagCollectionBtn = document.getElementById('shareTagCollectionBtn');
+if (shareTagCollectionBtn) shareTagCollectionBtn.addEventListener('click', shareTagCollection);
+
+// Limpiar filtro de tag
+const clearTagFilterBtn = document.getElementById('clearTagFilterBtn');
+if (clearTagFilterBtn) clearTagFilterBtn.addEventListener('click', clearTagFilter);
+
+// Limpiar búsqueda
+const clearSearchBtn = document.getElementById('clearSearchBtn');
+if (clearSearchBtn) clearSearchBtn.addEventListener('click', clearSearch);
+
+// Cerrar lightbox
+const lightboxCloseBtn = document.getElementById('lightbox-close');
+if (lightboxCloseBtn) lightboxCloseBtn.addEventListener('click', closeLightbox);
 
 // Sidebar functionality
 const sidebar = document.getElementById('sidebar');
