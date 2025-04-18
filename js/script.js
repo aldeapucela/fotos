@@ -1,3 +1,7 @@
+/*
+  Script principal
+*/
+
 // URL handling functions
 function getPhotoIdFromUrl() {
     const hash = window.location.hash;
