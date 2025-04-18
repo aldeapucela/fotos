@@ -73,19 +73,19 @@
         <p class="mb-3">Debe citase autor, url y licencia <a href="https://creativecommons.org/licenses/by-sa/4.0/deed.es" target="_blank" class="text-instagram-900 dark:text-instagram-300 underline">
           CC BY-SA 4.0</a></p>
         <div class="text-xs flex gap-4">
-            <a href="https://bsky.app/profile/fotos.aldeapucela.org" 
+          <a href="https://bsky.app/profile/fotos.aldeapucela.org" 
              target="_blank"
              class="text-instagram-500 dark:text-instagram-400 hover:text-instagram-700 dark:hover:text-instagram-300 inline-flex items-center gap-1">
-            <i class="fa-solid fa-link"></i>
+            <i class="fa-brands fa-bluesky"></i>
             <span>BlueSky</span>
-            </a>
+          </a>
             <button onclick="shareGeneral()" 
                 class="text-instagram-500 dark:text-instagram-400 hover:text-instagram-700 dark:hover:text-instagram-300 inline-flex items-center gap-1">
-            <i class="fa-solid fa-share"></i>
-            <span>Compartir</span>
+                <i class="fa-solid fa-share"></i>
+                <span>Compartir</span>
             </button>
           <a href="#" 
-             id="uploadPhotoBtn"
+             class="uploadPhotoBtn"
              class="text-instagram-500 dark:text-instagram-400 hover:text-instagram-700 dark:hover:text-instagram-300 inline-flex items-center gap-1">
             <i class="fa-solid fa-upload"></i>
             <span>Subir foto</span>
@@ -117,7 +117,7 @@
           </div>
         </div>
 
-        <!-- Navigation links -->
+        <!-- Explore links -->
         <div class="p-4 border-b border-instagram-200 dark:border-instagram-700">
           <h3 class="text-sm font-medium mb-2">Explora</h3>
           <nav class="space-y-2">
@@ -129,11 +129,19 @@
                 <i class="fa-solid fa-cubes w-5"></i>
                 <span>Elementos detectados</span>
               </a>
+              <a href="https://aldeapucela.org/" class="flex items-center gap-2 text-instagram-500 hover:text-instagram-700 py-1">
+                <i class="fa-solid fa-users w-5"></i>
+                <span>Comunidad</span>
+              </a>
+              <a href="https://t.me/AldeaPucela/27202" class="flex items-center gap-2 text-instagram-500 hover:text-instagram-700 py-1">
+                <i class="fa-solid fa-comment w-5"></i>
+                <span>Chat</span>
+              </a>
             </nav>
         </div>
 
         <!-- Filters section -->
-        <div class="p-4">
+        <div class="p-4 border-b border-instagram-200 dark:border-instagram-700">
           <h3 class="text-sm font-medium mb-2">Filtra</h3>
           
           <!-- Date filters -->
@@ -170,6 +178,27 @@
               </div>
             </div>
           </div>
+        </div>
+
+        <!-- Contribute links -->
+        <div class="p-4 border-b border-instagram-200 dark:border-instagram-700">
+          <h3 class="text-sm font-medium mb-2">Participa</h3>
+          <nav class="space-y-2">
+              <a href="#" 
+                  class="uploadPhotoBtn flex items-center gap-2 text-instagram-500 hover:text-instagram-700 py-1">
+                <i class="fa-solid fa-upload"></i>
+                <span>Subir foto</span>
+              </a>
+            <button onclick="shareGeneral()" class="flex items-center gap-2 text-instagram-500 hover:text-instagram-700 py-1">
+                <i class="fa-solid fa-share"></i>
+                <span>Compartir</span>
+            </button>
+            <a href="https://bsky.app/profile/fotos.aldeapucela.org" 
+             target="_blank" class="flex items-center gap-2 text-instagram-500 hover:text-instagram-700 py-1">
+                <i class="fa-brands fa-bluesky"></i>
+                <span>BlueSky</span>
+            </a>
+            </nav>
         </div>
       </div>
     </div>

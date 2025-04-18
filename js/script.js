@@ -981,19 +981,42 @@ function shareTagCollection() {
 
 // Upload dialog functionality
 const uploadDialog = document.getElementById('uploadDialog');
-const uploadPhotoBtn = document.getElementById('uploadPhotoBtn');
+const uploadPhotoBtns = document.getElementsByClassName('uploadPhotoBtn'); // Renombrado a plural para claridad
 const closeUploadDialog = document.getElementById('closeUploadDialog');
 
-uploadPhotoBtn.addEventListener('click', (e) => {
-  e.preventDefault();
-  uploadDialog.classList.remove('hidden');
-  uploadDialog.classList.add('flex');
+// Iterar sobre todos los botones con la clase 'uploadPhotoBtn'
+for (let i = 0; i < uploadPhotoBtns.length; i++) {
+  uploadPhotoBtns[i].addEventListener('click', (e) => {
+    e.preventDefault();
+    uploadDialog.classList.remove('hidden');
+    uploadDialog.classList.add('flex');
+  });
+}
+
+// El resto del código para cerrar el diálogo (si existe) permanece igual
+if (closeUploadDialog) {
+    closeUploadDialog.addEventListener('click', () => {
+        uploadDialog.classList.add('hidden');
+        uploadDialog.classList.remove('flex');
+    });
+}
+
+// Añadir funcionalidad para cerrar el diálogo haciendo clic fuera de él
+uploadDialog.addEventListener('click', (e) => {
+    // Si el clic fue directamente sobre el fondo del diálogo (no en sus hijos)
+    if (e.target === uploadDialog) {
+        uploadDialog.classList.add('hidden');
+        uploadDialog.classList.remove('flex');
+    }
 });
 
-closeUploadDialog.addEventListener('click', () => {
-  uploadDialog.classList.remove('flex');
-  uploadDialog.classList.add('hidden');
-});
+// Evitar que el clic dentro del contenido del diálogo lo cierre
+const uploadDialogContent = uploadDialog.querySelector('div'); // Asumiendo que el contenido está en un div
+if (uploadDialogContent) {
+    uploadDialogContent.addEventListener('click', (e) => {
+        e.stopPropagation(); // Detiene la propagación del evento al contenedor padre (uploadDialog)
+    });
+}
 
 // Close dialog when clicking outside
 uploadDialog.addEventListener('click', (e) => {
