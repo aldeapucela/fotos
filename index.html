@@ -69,28 +69,9 @@
     <!-- License notice banner -->
     <div class="dark:bg-instagram-800 text-instagram-700 dark:text-instagram-300 text-xs px-4 py-2">
       <div class="container mx-auto text-left">
-        <p class="mb-1">Fotos de la comunidad <a class="underline" href="https://aldeapucela.org/">Aldea Pucela</a>
+        <p class="mb-1">Creadas por la comunidad <a class="underline" href="https://aldeapucela.org/">Aldea Pucela</a>
         <p class="mb-3">Debe citase autor, url y licencia <a href="https://creativecommons.org/licenses/by-sa/4.0/deed.es" target="_blank" class="text-instagram-900 dark:text-instagram-300 underline">
           CC BY-SA 4.0</a></p>
-        <div class="text-xs flex gap-4">
-          <a href="https://bsky.app/profile/fotos.aldeapucela.org" 
-             target="_blank"
-             class="text-instagram-500 dark:text-instagram-400 hover:text-instagram-700 dark:hover:text-instagram-300 inline-flex items-center gap-1">
-            <i class="fa-brands fa-bluesky"></i>
-            <span>BlueSky</span>
-          </a>
-            <button onclick="shareGeneral()" 
-                class="text-instagram-500 dark:text-instagram-400 hover:text-instagram-700 dark:hover:text-instagram-300 inline-flex items-center gap-1">
-                <i class="fa-solid fa-share"></i>
-                <span>Compartir</span>
-            </button>
-          <a href="#" 
-             class="uploadPhotoBtn"
-             class="text-instagram-500 dark:text-instagram-400 hover:text-instagram-700 dark:hover:text-instagram-300 inline-flex items-center gap-1">
-            <i class="fa-solid fa-upload"></i>
-            <span>Subir foto</span>
-          </a>
-        </div>
       </div>
     </div>
   </header>
@@ -190,7 +171,7 @@
                 <span>Subir foto</span>
               </a>
             <button onclick="shareGeneral()" class="flex items-center gap-2 text-instagram-500 hover:text-instagram-700 py-1">
-                <i class="fa-solid fa-share"></i>
+                <i class="fa-solid fa-share-nodes"></i>
                 <span>Compartir</span>
             </button>
             <a href="https://bsky.app/profile/fotos.aldeapucela.org" 
@@ -274,6 +255,19 @@
       </div>
     </div>
   </main>
+
+  <!-- Floating Action Buttons -->
+  <div class="fixed bottom-6 right-6 z-40 flex flex-col gap-3">
+    <button onclick="shareGeneral()" 
+            class="bg-[#dfb59a] dark:bg-[#57316b] text-white w-10 h-10 rounded-full shadow-lg flex items-center justify-center hover:bg-[#AF8D77] dark:hover:bg-[#8C4EAD] transition-colors" 
+            title="Compartir">
+      <i class="fa-solid fa-share-nodes text-base"></i>
+    </button>
+    <button class="uploadPhotoBtn bg-[#dfb59a] dark:bg-[#57316b] text-white w-10 h-10 rounded-full shadow-lg flex items-center justify-center hover:bg-[#AF8D77] dark:hover:bg-[#8C4EAD] transition-colors" 
+            title="Subir foto">
+      <i class="fa-solid fa-upload text-base"></i>
+    </button>
+  </div>
   
   <!-- Footer with license notice -->  
   <footer class="mt-auto py-4 bg-white dark:bg-instagram-800 border-t border-instagram-200 dark:border-instagram-700 text-center text-xs text-instagram-500 dark:text-instagram-400 px-4">
