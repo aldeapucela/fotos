@@ -636,7 +636,18 @@ initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1
           start: monday,
           end: sunday,
           key: `${monday.getFullYear()}-${String(monday.getMonth()+1).padStart(2,'0')}-${String(monday.getDate()).padStart(2,'0')}_${sunday.getFullYear()}-${String(sunday.getMonth()+1).padStart(2,'0')}-${String(sunday.getDate()).padStart(2,'0')}`,
-          label: `${monday.getDate()} ${monday.toLocaleString('es', {month:'long'})} - ${sunday.getDate()} ${sunday.toLocaleString('es', {month:'long'})} ${sunday.getFullYear()}`
+          label: (() => {
+            const diaInicio = monday.getDate();
+            const mesInicio = monday.toLocaleString('es', {month:'long'});
+            const diaFin = sunday.getDate();
+            const mesFin = sunday.toLocaleString('es', {month:'long'});
+            const anio = sunday.getFullYear();
+            if (monday.getMonth() === sunday.getMonth()) {
+              return `${diaInicio} - ${diaFin} ${mesFin} ${anio}`;
+            } else {
+              return `${diaInicio} ${mesInicio} - ${diaFin} ${mesFin} ${anio}`;
+            }
+          })()
         };
       }
       // Agrupar por semana
