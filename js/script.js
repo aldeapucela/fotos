@@ -657,6 +657,9 @@ initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1
       // Agrupar por semana
       const grupos = rows.reduce((acc, row) => {
         const data = Object.fromEntries(cols.map((col, i) => [col, row[i]]));
+        if (data.is_appropriate === 0) {
+          data.description = "Descripción no disponible";
+        }
         const week = getWeekRange(data.fecha_grupo);
         if (!acc[week.key]) acc[week.key] = {label: week.label, fotos: []};
         acc[week.key].fotos.push(data);
