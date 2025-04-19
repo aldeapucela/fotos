@@ -40,19 +40,21 @@
   <header class="sticky top-0 z-40 bg-white dark:bg-instagram-800 border-b border-instagram-200 dark:border-instagram-700 shadow-sm">
     <div class="container mx-auto px-4 py-3">
       <!-- Top row with logo and menu button -->
-      <div class="flex justify-between items-center">
-        <div class="flex items-center gap-4">
-          <a href="/" class="text-instagram-500 hover:text-instagram-700" title="Inicio">
-            <i class="fa-solid fa-house"></i>
-          </a>
-          <div>
-            <h1 class="text-sm text-[#57316b] dark:text-[#dfb59a] bg-[#dfb59a] dark:bg-[#57316b] px-2 py-0.5 rounded font-bold inline-block uppercase">Fotos Valladolid</h1>
-          </div>
-        </div>
-        <button id="menuToggle" class="text-instagram-500 hover:text-instagram-900 transition-colors">
-          <i class="fa-solid fa-bars text-xl"></i>
-        </button>
-      </div>
+      <div class="grid [grid-template-columns:auto_1fr_auto] items-center">
+  <div class="flex justify-start">
+    <a href="/" class="text-instagram-500 hover:text-instagram-700" title="Inicio">
+      <i class="fa-solid fa-house"></i>
+    </a>
+  </div>
+  <div class="flex justify-center">
+    <h1 class="font-light tracking-wide px-2 py-0.5 rounded text-center text-instagram-500 dark:text-instagram-300 whitespace-nowrap overflow-hidden text-ellipsis" style="font-family: 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;">Fotos de Valladolid</h1>
+  </div>
+  <div class="flex justify-end">
+    <button id="menuToggle" class="text-instagram-500 hover:text-instagram-900 transition-colors">
+      <i class="fa-solid fa-bars text-xl"></i>
+    </button>
+  </div>
+</div>
     </div>
   </header>
 
@@ -335,7 +337,7 @@
   <!-- Load DOMPurify (for security) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.2.5/purify.min.js" integrity="sha512-/CUtA84sWWqWEBejNrrtWa7Yc4cth3Ome2ymvCKOo9YcZ4sh98tndUy4LutE2xGcAgD4fyz16y+gSyJdGCB5ww==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <!-- Load our JavaScript -->
-  <script src="js/script.js?202504191437"></script>
+  <script src="js/script.js?202504192056"></script>
   <!-- Load Matomo Analytics -->
   <script src="js/matomo.js"></script>
 </body>
