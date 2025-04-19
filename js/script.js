@@ -1414,6 +1414,13 @@ async function loadElements() {
 // Ejecutar solo en la página correcta cuando el DOM esté listo
 
 document.addEventListener('DOMContentLoaded', function () {
+  // Scroll suave al top al hacer click en el h1
+  var scrollTitle = document.getElementById('scrollTopTitle');
+  if (scrollTitle) {
+    scrollTitle.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
   if (document.getElementById('tags-list')) {
     loadTags();
   }
