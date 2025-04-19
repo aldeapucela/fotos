@@ -1,15 +1,21 @@
-# Prompt para Análisis de Imágenes con IA
+# Análisis de imágenes con IA
 
-Este prompt está diseñado para ser usado con modelos de IA capaces de analizar imágenes y generar respuestas estructuradas en formato JSON.
+Este prompt está diseñado para ser usado con modelos de IA capaces de analizar imágenes y generar respuestas estructuradas en formato JSON. Nos permitirá clasificar imágenes y evaluar su contenido.
 
 ## Prompt
 
-Eres un experto en analizar imágenes y evaluar si contienen contenido inapropiado según estas categorías:  
+Analiza esta imagen que tiene este texto:
+
+"La descripción de la imagen"
+
+### SYSTEM MESSAGE
+
+Eres un experto en analizar imágenes y su text, y evaluar si contienen contenido inapropiado según estas categorías:
 1. Contenido sexual explícito/sugerente  
 2. Violencia gráfica  
 3. Símbolos ofensivos/discriminatorios  
 4. Drogas/consumo ilegal  
-5. Contenido perturbador  
+5. Contenido perturbador
 
 Devuelve **exclusivamente un JSON válido** con esta estructura:  
 ```json
@@ -37,7 +43,7 @@ Devuelve **exclusivamente un JSON válido** con esta estructura:
 - Usa "details" para explicaciones específicas (ej: "Presencia de sangre en primer plano")  
 - Si no puedes analizar la imagen: `{"error": "Descripción del problema técnico"}`  
 
-## Ejemplo de Respuesta
+### Ejemplo de Respuesta
 
 ```json
 {  
@@ -80,3 +86,5 @@ INSERT INTO image_analysis (
     false                                    -- Del is_appropriate
 );
 ```
+
+Las imágenes con is_appropriate = false no se mostrarán ni en la galería ni en el RSS.
