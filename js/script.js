@@ -295,6 +295,85 @@ if (listViewBtn) {
 
 // Open lightbox with photo details
 function openLightbox(imgSrc, data) {
+  // Obtener filename y telegramId para la URL canónica y Telegram
+  const filename = data.path?.split('/').pop() || '';
+  const telegramId = filename.replace('.jpg', '').replace('.png', '').replace('.jpeg', '');
+  const canonicalUrl = window.location.origin + window.location.pathname + '#' + telegramId;
+  const blueskyDiv = document.getElementById('bluesky-comments');
+  const commentsBtn = document.getElementById('lightbox-chat-btn');
+  const commentsBadge = document.getElementById('lightbox-comments-count');
+  if (blueskyDiv) {
+    blueskyDiv.innerHTML = '';
+    blueskyDiv.style.display = 'none';
+  }
+  if (commentsBadge) {
+    commentsBadge.textContent = '';
+    commentsBadge.style.display = 'none';
+  }
+  // Consultar el número de comentarios y actualizar el badge
+  if (typeof loadBlueskyComments === 'function' && commentsBadge && commentsBtn) {
+    loadBlueskyComments(canonicalUrl, true).then(async (result) => {
+      let commentCount, likeCount, threadUrl;
+      if (typeof result === 'object' && result !== null) {
+        commentCount = result.commentCount;
+        likeCount = result.likeCount;
+        threadUrl = result.threadUrl;
+      } else {
+        commentCount = typeof result === 'number' ? result : 0;
+        likeCount = 0;
+        threadUrl = null;
+      }
+      // Update comments badge
+      if (typeof commentCount === 'number' && commentCount > 0) {
+        commentsBadge.textContent = commentCount;
+        commentsBadge.style.display = '';
+        commentsBadge.classList.remove('bg-instagram-500','text-white','rounded-full','min-w-[1.2em]','px-1','h-5','flex','items-center','justify-center');
+      } else {
+        commentsBadge.textContent = '';
+        commentsBadge.style.display = 'none';
+      }
+
+      // Hide or show the comments icon depending on threadUrl
+      if (threadUrl) {
+        commentsBtn.style.display = '';
+      } else {
+        commentsBtn.style.display = 'none';
+      }
+
+      // Add likes count and link to thread
+      let likesEl = document.getElementById('lightbox-likes-count');
+      if (!likesEl) {
+        likesEl = document.createElement('a');
+        likesEl.id = 'lightbox-likes-count';
+        likesEl.className = 'flex items-center gap-1 text-instagram-500 hover:text-instagram-700 text-base';
+        commentsBtn.parentNode.insertBefore(likesEl, commentsBtn.nextSibling);
+      }
+      if (threadUrl) {
+        likesEl.href = threadUrl;
+        likesEl.target = '_blank';
+        likesEl.rel = 'noopener noreferrer';
+        likesEl.style.display = '';
+        likesEl.innerHTML = `<i class="fa-regular fa-heart"></i> <span>${likeCount}</span>`;
+      } else {
+        likesEl.removeAttribute('href');
+        likesEl.innerHTML = `<i class="fa-regular fa-heart"></i> <span>0</span>`;
+        likesEl.style.display = 'none';
+      }
+    });
+  }
+  // Evento para mostrar/ocultar comentarios al hacer clic
+  if (commentsBtn && blueskyDiv) {
+    commentsBtn.onclick = async () => {
+      if (blueskyDiv.style.display === 'none' || blueskyDiv.innerHTML === '') {
+        blueskyDiv.innerHTML = '<div class="text-center text-instagram-500 py-4">Cargando comentarios...</div>';
+        blueskyDiv.style.display = '';
+        await loadBlueskyComments(canonicalUrl);
+      } else {
+        blueskyDiv.style.display = 'none';
+      }
+    };
+  }
+
   // Get all visible photos for navigation
   visiblePhotos = Array.from(document.querySelectorAll('.photo-card:not(.hidden)')).map(card => {
     // Check if the photo is appropriate
@@ -356,8 +435,6 @@ function openLightbox(imgSrc, data) {
   });
 
   // Create Telegram URL
-  const filename = data.path?.split('/').pop() || '';
-  const telegramId = filename.replace('.jpg', '').replace('.png', '').replace('.jpeg', '');
   const telegramUrl = `https://t.me/AldeaPucela/27202/${telegramId}`;
   updateUrl(telegramId);
   
@@ -436,12 +513,7 @@ function openLightbox(imgSrc, data) {
     sharePhoto(telegramId, data.description);
   };
 
-  // Update chat link (ensure target and rel)
-  const chatLink = document.getElementById('lightbox-chat');
-  chatLink.href = telegramUrl;
-  chatLink.target = '_blank'; // Assuming it opens in new tab
-  chatLink.rel = 'noopener noreferrer'; // Security: Prevent tabnabbing
-  
+
   // Update download link
   const downloadButton = document.getElementById('lightbox-download');
   if (data.is_appropriate !== 0 && data.path) {
