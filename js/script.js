@@ -952,9 +952,20 @@ initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1
                       <i class="fa-solid fa-download"></i>
                     </a>
                   ` : ''}
-                  <a href="${telegramUrl}" target="_blank" rel="noopener noreferrer" class="text-instagram-500 hover:text-instagram-700" title="Comentar en Telegram">
-                    <i class="fa-regular fa-comment"></i>
-                  </a>
+                  ${(() => {
+                      const canonicalUrl = window.location.origin + window.location.pathname + '#' + telegramId;
+                      const cache = window._blueskyCountersCache || {};
+                      const bluesky = cache[canonicalUrl];
+                      let html = '';
+                      if (bluesky && bluesky.likeCount > 0) {
+                        html += `<span class="ml-1 text-instagram-500 flex items-center" title="Me gusta en Bluesky"><i class="fa-regular fa-heart mr-1"></i><span>${bluesky.likeCount}</span></span>`;
+                      }
+                      if (bluesky && bluesky.commentCount > 0) {
+                        html += `<a href="${bluesky.threadUrl || '#'}" target="_blank" rel="noopener noreferrer" class="ml-3 text-instagram-500 hover:text-instagram-700 flex items-center" title="Ver comentarios en Bluesky"><i class="fa-regular fa-comment"></i><span class="ml-1">${bluesky.commentCount}</span></a>`;
+                      }
+                      return html;
+                    })()}
+                  
                 </div>
                 <a class="text-xs text-instagram-400 hover:text-instagram-700" href="https://creativecommons.org/licenses/by-sa/4.0/deed.es" target="_blank" rel="noopener noreferrer">CC BY-SA 4.0</a>
               </div>`;
