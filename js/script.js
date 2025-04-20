@@ -368,6 +368,13 @@ function openLightbox(imgSrc, data) {
         blueskyDiv.innerHTML = '<div class="text-center text-instagram-500 py-4">Cargando comentarios...</div>';
         blueskyDiv.style.display = '';
         await loadBlueskyComments(canonicalUrl);
+        // --- BLOQUE NUEVO: Evitar cierre del lightbox al hacer scroll/touch en comentarios ---
+        ['touchstart', 'touchmove', 'wheel'].forEach(ev => {
+          blueskyDiv.addEventListener(ev, function(e) {
+            e.stopPropagation();
+          }, { passive: false });
+        });
+        // --- FIN BLOQUE NUEVO ---
       } else {
         blueskyDiv.style.display = 'none';
       }
