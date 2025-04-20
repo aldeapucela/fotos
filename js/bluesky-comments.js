@@ -151,9 +151,9 @@ async function loadBlueskyComments(photoUrl, returnCountOnly = false) {
       li.className = "mb-4 p-3 bg-white dark:bg-instagram-800 rounded shadow-sm";
       li.innerHTML = `
         <div class="flex items-center gap-3 mb-2">
-          <img src="${author.avatar || ''}" alt="avatar" class="w-7 h-7 rounded-full mr-2 border border-instagram-200 dark:border-instagram-700 bg-white object-cover" loading="lazy" />
+          <img src="${author.avatar || ''}" alt="avatar" class="w-7 h-7 rounded-full border border-instagram-200 dark:border-instagram-700 bg-white object-cover" loading="lazy" />
           <div>
-            <a href="https://bsky.app/profile/${author.did}" target="_blank" class="font-bold text-instagram-600 hover:text-instagram-700">${author.displayName || author.handle}</a>
+            <a href="https://bsky.app/profile/${author.did}" target="_blank" class="font-bold text-instagram-600 hover:text-instagram-700 text-sm">${author.displayName || author.handle}</a>
             <span class="ml-2 text-xs text-instagram-400">${timeAgo(reply.post.record.createdAt)}</span>
           </div>
         </div>
