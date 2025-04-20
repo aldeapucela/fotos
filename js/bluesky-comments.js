@@ -1,6 +1,25 @@
 // Usuario propietario de los hilos de comentarios
 const BLUESKY_THREAD_HANDLE = 'fotos.aldeapucela.org'; // Cambia aquí el handle si quieres otro usuario
 
+// Devuelve texto como "24m", "1h", "3d"...
+function timeAgo(date) {
+  const now = new Date();
+  const then = new Date(date);
+  const seconds = Math.floor((now - then) / 1000);
+  if (seconds < 60) return `${seconds} s`;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes} min.`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} h`;
+  const days = Math.floor(hours / 24);
+  if (days < 30) return `${days} d`;
+  const months = Math.floor(days / 30);
+  if (months < 12) return `${months} ${months === 1 ? 'mes' : 'meses'}`;
+  const years = Math.floor(days / 365);
+  return `${years} ${years === 1 ? 'año' : 'años'}`;
+}
+
+
 window.getBlueskyThreadStats = async function(photoUrl) {
   const currentUrl = photoUrl || window.location.href;
   const searchParams = new URLSearchParams({
@@ -135,7 +154,7 @@ async function loadBlueskyComments(photoUrl, returnCountOnly = false) {
           <img src="${author.avatar || ''}" alt="avatar" class="w-7 h-7 rounded-full mr-2 border border-instagram-200 dark:border-instagram-700 bg-white object-cover" loading="lazy" />
           <div>
             <a href="https://bsky.app/profile/${author.did}" target="_blank" class="font-bold text-instagram-600 hover:text-instagram-700">${author.displayName || author.handle}</a>
-            <span class="ml-2 text-xs text-instagram-400">${new Date(reply.post.record.createdAt).toLocaleString('es-ES', {dateStyle: 'short', timeStyle: 'short'})}</span>
+            <span class="ml-2 text-xs text-instagram-400">${timeAgo(reply.post.record.createdAt)}</span>
           </div>
         </div>
         <p class="text-instagram-500 text-sm mb-2">${reply.post.record.text}</p>
