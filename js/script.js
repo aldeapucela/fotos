@@ -803,6 +803,34 @@ initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1
             const img = entry.target;
             if (!img.dataset.inappropriate) {
               img.src = img.dataset.src;
+              // Precarga contadores Bluesky (likes/comentarios)
+              try {
+                // Extraer la URL canónica igual que en openLightbox
+                const card = img.closest('.photo-card');
+                if (card) {
+                  const filename = img.dataset.src?.split('/').pop() || '';
+                  const telegramId = filename.replace('.jpg', '').replace('.png', '').replace('.jpeg', '');
+                  const canonicalUrl = window.location.origin + window.location.pathname + '#' + telegramId;
+                  window._blueskyCountersCache = window._blueskyCountersCache || {};
+                  const countersCache = window._blueskyCountersCache;
+                  // Solo si no está ya en caché
+                  if (!countersCache[canonicalUrl] && typeof loadBlueskyComments === 'function') {
+                    loadBlueskyComments(canonicalUrl, true).then(result => {
+                      let commentCount, likeCount, threadUrl;
+                      if (typeof result === 'object' && result !== null) {
+                        commentCount = result.commentCount;
+                        likeCount = result.likeCount;
+                        threadUrl = result.threadUrl;
+                      } else {
+                        commentCount = typeof result === 'number' ? result : 0;
+                        likeCount = 0;
+                        threadUrl = null;
+                      }
+                      countersCache[canonicalUrl] = { commentCount, likeCount, threadUrl };
+                    }).catch(()=>{});
+                  }
+                }
+              } catch (e) { /* noop */ }
               img.onload = () => img.classList.add('opacity-100');
             }
             observer.unobserve(img);

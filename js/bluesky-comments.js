@@ -24,7 +24,14 @@ window.getBlueskyThreadStats = async function(photoUrl) {
 
 
 async function loadBlueskyComments(photoUrl, returnCountOnly = false) {
-  const currentUrl = photoUrl || window.location.href;
+  let currentUrl = photoUrl || window.location.href;
+  // Si estamos en localhost, forzar la url de producción para debug
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    const hash = window.location.hash;
+    if (hash) {
+      currentUrl = `https://fotos.aldeapucela.org/${hash}`;
+    }
+  }
   const commentsDiv = document.getElementById("bluesky-comments");
 
   try {
