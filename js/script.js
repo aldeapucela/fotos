@@ -834,6 +834,18 @@ initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1
                         threadUrl = null;
                       }
                       countersCache[canonicalUrl] = { commentCount, likeCount, threadUrl };
+                      // Actualizar dinámicamente los iconos en la tarjeta
+                      const actions = document.querySelector(`.actions[data-photo-id='${telegramId}'] .bluesky-icons`);
+                      if (actions) {
+                        let html = '';
+                        if (likeCount > 0) {
+                          html += `<span class="ml-1 text-instagram-500 flex items-center" title="Me gusta en Bluesky"><i class="fa-regular fa-heart mr-1"></i><span>${likeCount}</span></span>`;
+                        }
+                        if (commentCount > 0) {
+                          html += `<a href="${threadUrl || '#'}" target="_blank" rel="noopener noreferrer" class="ml-3 text-instagram-500 hover:text-instagram-700 flex items-center" title="Ver comentarios en Bluesky"><i class="fa-regular fa-comment"></i><span class="ml-1">${commentCount}</span></a>`;
+                        }
+                        actions.innerHTML = html;
+                      }
                     }).catch(()=>{});
                   }
                 }
@@ -941,7 +953,7 @@ initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1
               </div>
               ${data.description ? `<p class="text-sm text-instagram-500 line-clamp-2">${DOMPurify.sanitize(convertHashtagsToLinks(data.description, false))}</p>` : ''} 
               <div class="mt-2 flex justify-between items-center text-instagram-400 text-lg">
-                <div class="actions">
+                <div class="actions" data-photo-id="${telegramId}">
                   <button type="button" class="share-button hover:text-instagram-600 mr-3" 
                           class="share-button hover:text-instagram-600 mr-3" data-telegram-id="${telegramId}" data-description="${encodeURIComponent(data.description || '')}" 
                           title="Compartir">
@@ -952,19 +964,7 @@ initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1
                       <i class="fa-solid fa-download"></i>
                     </a>
                   ` : ''}
-                  ${(() => {
-                      const canonicalUrl = window.location.origin + window.location.pathname + '#' + telegramId;
-                      const cache = window._blueskyCountersCache || {};
-                      const bluesky = cache[canonicalUrl];
-                      let html = '';
-                      if (bluesky && bluesky.likeCount > 0) {
-                        html += `<span class="ml-1 text-instagram-500 flex items-center" title="Me gusta en Bluesky"><i class="fa-regular fa-heart mr-1"></i><span>${bluesky.likeCount}</span></span>`;
-                      }
-                      if (bluesky && bluesky.commentCount > 0) {
-                        html += `<a href="${bluesky.threadUrl || '#'}" target="_blank" rel="noopener noreferrer" class="ml-3 text-instagram-500 hover:text-instagram-700 flex items-center" title="Ver comentarios en Bluesky"><i class="fa-regular fa-comment"></i><span class="ml-1">${bluesky.commentCount}</span></a>`;
-                      }
-                      return html;
-                    })()}
+                  <span class="bluesky-icons"></span>
                   
                 </div>
                 <a class="text-xs text-instagram-400 hover:text-instagram-700" href="https://creativecommons.org/licenses/by-sa/4.0/deed.es" target="_blank" rel="noopener noreferrer">CC BY-SA 4.0</a>
