@@ -66,20 +66,30 @@ CREATE TABLE IF NOT EXISTS bluesky_posts (
 );
 ```
 
+**Tabla opcional: `image_analysis`**
+
+Esta tabla permite almacenar los resultados de análisis de contenido de las imágenes utilizando IA. Es útil para:
+
+- Filtrar contenido inapropiado del feed RSS automáticamente.
+- Mostrar advertencias en la interfaz cuando sea necesario.
+- Mantener un registro de análisis de contenido y moderación.
+
+Campos destacados:
+- `image_id`: referencia a la imagen analizada.
+- `description`: resumen generado por IA sobre el contenido de la imagen.
+- `tags`: etiquetas generadas automáticamente.
+- `risk_assessment` y `flags`: información adicional sobre riesgos o advertencias.
+- `is_appropriate`: si la imagen es apta para mostrar.
+- `analysis_date`: fecha del análisis.
+
+Se recomienda usar un modelo de IA capaz de analizar imágenes para generar estos análisis. Ver [AI_PROMPT.md](AI_PROMPT.md) para un ejemplo del prompt a utilizar y el formato de datos esperado.
+
 **Tabla opcional: `bluesky_posts`**
 
 Esta tabla permite asociar cada imagen de la galería con el identificador (`post_id`) de su post correspondiente en la red social [Bluesky](https://bsky.app/). Esto es útil si quieres mostrar comentarios y 'likes' de Bluesky directamente en la galería, o enlazar cada foto con su publicación original. Si no usas integración con Bluesky, puedes omitir esta tabla sin problema.
 
 - `image_id`: referencia a la imagen de la tabla `imagenes`.
 - `post_id`: identificador del post en Bluesky.
-
-
-
-1. Filtrar contenido inapropiado del feed RSS automáticamente
-2. Mostrar advertencias en la interfaz cuando sea necesario
-3. Mantener un registro de análisis de contenido
-
-Se recomienda usar un modelo de IA capaz de analizar imágenes para generar estos análisis. Ver [AI_PROMPT.md](AI_PROMPT.md) para un ejemplo del prompt a utilizar y el formato de datos esperado.
 
 ## Scripts de mantenimiento
 
