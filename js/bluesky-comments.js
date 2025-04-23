@@ -21,129 +21,138 @@ function timeAgo(date) {
 
 
 window.getBlueskyThreadStats = async function(photoUrl) {
-  const currentUrl = photoUrl || window.location.href;
-  const searchParams = new URLSearchParams({
-    q: '',
-    author: BLUESKY_THREAD_HANDLE,
-    url: currentUrl
-  });
-  const searchResponse = await fetch(
-    `https://public.api.bsky.app/xrpc/app.bsky.feed.searchPosts?${searchParams}`,
-    { headers: { Accept: "application/json" } }
-  );
-  if (!searchResponse.ok) return { likeCount: 0, threadUrl: null };
-  const searchData = await searchResponse.json();
-  const threadPost = searchData.posts.find(post => post.author && post.author.handle === BLUESKY_THREAD_HANDLE);
-  if (threadPost) {
-    const threadUrl = `https://bsky.app/profile/${threadPost.author.did}/post/${threadPost.uri.split('/').pop()}`;
-    return { likeCount: threadPost.likeCount || 0, threadUrl };
+  // Use the same logic as loadBlueskyComments to get the post_id from the DB
+  let imagePath = null;
+  let canonicalUrl = photoUrl || window.location.href;
+  if (canonicalUrl.startsWith('http')) {
+    const hash = canonicalUrl.split('#')[1];
+    if (hash) {
+      imagePath = hash + '.jpg';
+    } else {
+      imagePath = canonicalUrl.split('/').pop();
+    }
+  } else {
+    imagePath = canonicalUrl;
   }
-  return { likeCount: 0, threadUrl: null };
+  try {
+    if (!window.initSqlJs) {
+      throw new Error('sql.js not loaded');
+    }
+    const SQL = await window.initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.13.0/${file}` });
+    const response = await fetch('/fotos.db');
+    const buffer = await response.arrayBuffer();
+    const db = new SQL.Database(new Uint8Array(buffer));
+    const stmt = db.prepare("SELECT post_id FROM bluesky_posts JOIN imagenes ON bluesky_posts.image_id = imagenes.id WHERE imagenes.path = ?");
+    stmt.bind([imagePath]);
+    let postId = null;
+    if (stmt.step()) {
+      postId = stmt.getAsObject().post_id;
+    }
+    stmt.free();
+    db.close();
+    if (!postId) {
+      return { likeCount: 0, threadUrl: null };
+    }
+    const threadUrl = `https://bsky.app/profile/${BLUESKY_THREAD_HANDLE}/post/${postId}`;
+    const threadApiUrl = `https://public.api.bsky.app/xrpc/app.bsky.feed.getPostThread?uri=at://${BLUESKY_THREAD_HANDLE}/app.bsky.feed.post/${postId}`;
+    const threadResponse = await fetch(threadApiUrl, { headers: { Accept: "application/json" } });
+    let likeCount = 0;
+    if (threadResponse.ok) {
+      const threadData = await threadResponse.json();
+      likeCount = threadData.thread?.post?.likeCount || 0;
+    }
+    return { likeCount, threadUrl };
+  } catch (error) {
+    return { likeCount: 0, threadUrl: null };
+  }
 }
 
-
+// Función para cargar los comentarios de Bluesky
 async function loadBlueskyComments(photoUrl, returnCountOnly = false) {
-  let currentUrl = photoUrl || window.location.href;
-  // Si estamos en localhost, forzar la url de producción para debug
-  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-    const hash = window.location.hash;
+  // photoUrl es la URL canónica de la foto (con hash) o la ruta de la imagen
+  let imagePath = null;
+  let canonicalUrl = photoUrl || window.location.href;
+  // Extraer el nombre del archivo del hash o ruta de la URL
+  if (canonicalUrl.startsWith('http')) {
+    const hash = canonicalUrl.split('#')[1];
     if (hash) {
-      currentUrl = `https://fotos.aldeapucela.org/${hash}`;
+      imagePath = hash + '.jpg'; // Assumes .jpg, adjust if needed
+    } else {
+      // fallback: try to extract last path segment
+      imagePath = canonicalUrl.split('/').pop();
     }
+  } else {
+    imagePath = canonicalUrl;
   }
   const commentsDiv = document.getElementById("bluesky-comments");
-
   try {
-    // Search for posts by author and url (more precise)
-    const searchParams = new URLSearchParams({
-      q: currentUrl,
-      author: BLUESKY_THREAD_HANDLE,
-      url: currentUrl
-    });
-    const searchResponse = await fetch(
-      `https://public.api.bsky.app/xrpc/app.bsky.feed.searchPosts?${searchParams}`,
-      { headers: { Accept: "application/json" } }
-    );
-
-    if (!searchResponse.ok) {
-      throw new Error("Failed to search posts");
+    // Load the SQLite DB with sql.js
+    if (!window.initSqlJs) {
+      throw new Error('sql.js not loaded');
     }
-
-    const searchData = await searchResponse.json();
-
-    // Filtra solo posts del usuario concreto y que tengan facet link a la url exacta
-    const threadPost = searchData.posts.find(post =>
-      post.author &&
-      post.author.handle === BLUESKY_THREAD_HANDLE &&
-      Array.isArray(post.record.facets) &&
-      post.record.facets.some(facet =>
-        Array.isArray(facet.features) &&
-        facet.features.some(feature =>
-          feature.$type === "app.bsky.richtext.facet#link" &&
-          feature.uri === currentUrl
-        )
-      )
-    );
+    const SQL = await window.initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.13.0/${file}` });
+    const response = await fetch('/fotos.db');
+    const buffer = await response.arrayBuffer();
+    const db = new SQL.Database(new Uint8Array(buffer));
+    // Query for the post_id
+    const stmt = db.prepare("SELECT post_id FROM bluesky_posts JOIN imagenes ON bluesky_posts.image_id = imagenes.id WHERE imagenes.path = ?");
+    stmt.bind([imagePath]);
+    let postId = null;
+    if (stmt.step()) {
+      postId = stmt.getAsObject().post_id;
+    }
+    stmt.free();
+    db.close();
+    if (!postId) {
+      // No post_id found, show default message
+      if (commentsDiv) {
+        commentsDiv.innerHTML = `<div class='flex flex-col items-center text-instagram-500 py-6'>
+          <i class='fa-regular fa-comment-dots text-3xl mb-2'></i>
+          <span class='text-base'>No hay hilo de comentarios para esta foto aún</span>
+        </div>`;
+      }
+      if (returnCountOnly) return { commentCount: 0, likeCount: 0, threadUrl: null };
+      return;
+    }
+    // Now fetch the thread/comments from Bluesky API using postId
+    const threadUrl = `https://bsky.app/profile/${BLUESKY_THREAD_HANDLE}/post/${postId}`;
+    const threadApiUrl = `https://public.api.bsky.app/xrpc/app.bsky.feed.getPostThread?uri=at://${BLUESKY_THREAD_HANDLE}/app.bsky.feed.post/${postId}`;
+    const threadResponse = await fetch(threadApiUrl, { headers: { Accept: "application/json" } });
     let allComments = [];
-    if (threadPost) {
-      const threadParams = new URLSearchParams({ uri: threadPost.uri });
-      const threadResponse = await fetch(
-        `https://public.api.bsky.app/xrpc/app.bsky.feed.getPostThread?${threadParams}`,
-        { headers: { Accept: "application/json" } }
-      );
-      if (threadResponse.ok) {
-        const threadData = await threadResponse.json();
-        if (threadData.thread?.replies) {
-          allComments = threadData.thread.replies;
-        }
+    let likeCount = 0;
+    if (threadResponse.ok) {
+      const threadData = await threadResponse.json();
+      if (threadData.thread) {
+        likeCount = threadData.thread.post?.likeCount || 0;
+        allComments = threadData.thread.replies || [];
       }
     }
-
-
-    // Enlace al hilo principal (de ese usuario) o a su perfil
-    const mainThreadUrl = (threadPost)
-      ? `https://bsky.app/profile/${threadPost.author.did}/post/${threadPost.uri.split('/').pop()}`
-      : `https://bsky.app/profile/${BLUESKY_THREAD_HANDLE}`;
-
     if (returnCountOnly) {
-      // Devuelve número de comentarios, likes y URL del hilo
-      return {
-        commentCount: allComments.length,
-        likeCount: threadPost ? (threadPost.likeCount || 0) : 0,
-        threadUrl: threadPost ? `https://bsky.app/profile/${threadPost.author.did}/post/${threadPost.uri.split('/').pop()}` : null
-      };
+      return { commentCount: allComments.length, likeCount, threadUrl };
     }
-    // Elimina el mensaje de cargando si existe
+    // Render comments as before
     if (commentsDiv) commentsDiv.innerHTML = '';
     if (allComments.length === 0) {
       commentsDiv.innerHTML = `<div class="flex flex-col items-center text-instagram-500 py-6">
         <i class='fa-regular fa-comment-dots text-3xl mb-2'></i>
         <span class='text-base'>Sé el primero en comentar</span>
       </div>`;
-      // Añadir botón para comentar
+      // Add button to comment
       const addBtn = document.createElement('button');
       addBtn.className = 'mt-4 flex items-center gap-2 text-instagram-500 hover:text-instagram-700 font-medium';
       addBtn.innerHTML = `<i class='fa-regular fa-comment-dots'></i> Añadir comentario`;
-      addBtn.onclick = () => window.open(mainThreadUrl, '_blank');
+      addBtn.onclick = () => window.open(threadUrl, '_blank');
       commentsDiv.appendChild(addBtn);
       return;
-    
     }
-    // Botón para añadir comentario (arriba)
+    // Add button to comment (top)
     const addBtnTop = document.createElement('button');
     addBtnTop.className = 'mb-4 flex items-center gap-2 text-instagram-500 hover:text-instagram-700 font-medium';
     addBtnTop.innerHTML = `<i class='fa-regular fa-comment-dots'></i> Añadir comentario`;
-    addBtnTop.onclick = () => window.open(mainThreadUrl, '_blank');
+    addBtnTop.onclick = () => window.open(threadUrl, '_blank');
     commentsDiv.appendChild(addBtnTop);
-
     const commentsList = document.createElement("ul");
-
-    // Sort all comments by time
-    const sortedComments = allComments.sort(
-      (a, b) => new Date(a.post.indexedAt) - new Date(b.post.indexedAt)
-    );
-
-    // Format each of the comments
+    const sortedComments = allComments.sort((a, b) => new Date(a.post.indexedAt) - new Date(b.post.indexedAt));
     sortedComments.forEach((reply) => {
       if (!reply?.post?.record?.text) return;
       const author = reply.post.author;
@@ -167,15 +176,15 @@ async function loadBlueskyComments(photoUrl, returnCountOnly = false) {
       `;
       commentsList.appendChild(li);
     });
-
     commentsDiv.appendChild(commentsList);
-    // Añadir botón para comentar al final
+    // Add button to comment (bottom)
     const addBtn = document.createElement('button');
     addBtn.className = 'mt-6 flex items-center gap-2 text-instagram-500 hover:text-instagram-700 font-medium';
     addBtn.innerHTML = `<i class='fa-regular fa-comment-dots'></i> Añadir comentario`;
-    addBtn.onclick = () => window.open(mainThreadUrl, '_blank');
+    addBtn.onclick = () => window.open(threadUrl, '_blank');
     commentsDiv.appendChild(addBtn);
   } catch (error) {
-    throw new Error(error);
+    if (commentsDiv) commentsDiv.innerHTML = `<div class='text-instagram-500 py-6'>Error cargando comentarios Bluesky</div>`;
+    if (returnCountOnly) return { commentCount: 0, likeCount: 0, threadUrl: null };
   }
 }

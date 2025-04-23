@@ -56,9 +56,24 @@ CREATE TABLE "image_analysis" (
     FOREIGN KEY("image_id") REFERENCES "imagenes"("id") ON DELETE CASCADE,
     PRIMARY KEY("id" AUTOINCREMENT)
 );
+
+CREATE TABLE IF NOT EXISTS bluesky_posts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    image_id INTEGER NOT NULL,
+    post_id TEXT NOT NULL,
+    FOREIGN KEY(image_id) REFERENCES imagenes(id) ON DELETE CASCADE,
+    UNIQUE(image_id)
+);
 ```
 
-La tabla `image_analysis` es opcional y está diseñada para almacenar resultados de análisis de contenido de las imágenes utilizando IA. Esto permite:
+**Tabla opcional: `bluesky_posts`**
+
+Esta tabla permite asociar cada imagen de la galería con el identificador (`post_id`) de su post correspondiente en la red social [Bluesky](https://bsky.app/). Esto es útil si quieres mostrar comentarios y 'likes' de Bluesky directamente en la galería, o enlazar cada foto con su publicación original. Si no usas integración con Bluesky, puedes omitir esta tabla sin problema.
+
+- `image_id`: referencia a la imagen de la tabla `imagenes`.
+- `post_id`: identificador del post en Bluesky.
+
+
 
 1. Filtrar contenido inapropiado del feed RSS automáticamente
 2. Mostrar advertencias en la interfaz cuando sea necesario
