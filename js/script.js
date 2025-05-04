@@ -824,12 +824,33 @@ initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1
                       if (actions) {
                         let html = '';
                         if (likeCount > 0) {
-                          html += `<span class="ml-1 text-instagram-500 flex items-center" title="Me gusta en Bluesky"><i class="fa-regular fa-heart mr-1"></i><span>${likeCount}</span></span>`;
+                          html += `<a href="${threadUrl || '#'}" target="_blank" rel="noopener noreferrer" class="text-instagram-500 hover:text-instagram-700 flex items-center" title="Me gusta en Bluesky"><i class="fa-regular fa-heart mr-1"></i><span>${likeCount}</span></a>`;
                         }
                         if (commentCount > 0) {
-                          html += `<a href="${threadUrl || '#'}" target="_blank" rel="noopener noreferrer" class="ml-3 text-instagram-500 hover:text-instagram-700 flex items-center" title="Ver comentarios en Bluesky"><i class="fa-regular fa-comment"></i><span class="ml-1">${commentCount}</span></a>`;
+                          html += `<button type="button" class="open-comments-btn ml-3 text-instagram-500 hover:text-instagram-700 flex items-center" title="Ver comentarios" data-photo-id="${telegramId}"><i class="fa-regular fa-comment"></i><span class="ml-1">${commentCount}</span></button>`;
                         }
                         actions.innerHTML = html;
+
+                        // Añadir event listener para el botón de comentarios
+                        const commentsBtn = actions.querySelector('.open-comments-btn');
+                        if (commentsBtn) {
+                          commentsBtn.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            // Encontrar la tarjeta de foto y simular clic para abrir el lightbox
+                            const photoCard = document.querySelector(`.photo-card[data-photo-id="${telegramId}"]`);
+                            if (photoCard) {
+                              photoCard.click();
+                              // Simular clic en el botón de comentarios del lightbox
+                              setTimeout(() => {
+                                const lightboxCommentsBtn = document.getElementById('lightbox-chat-btn');
+                                if (lightboxCommentsBtn) {
+                                  lightboxCommentsBtn.click();
+                                }
+                              }, 300); // Pequeño retraso para asegurar que el lightbox está abierto
+                            }
+                          });
+                        }
                       }
                     }).catch(()=>{});
                   }
@@ -937,22 +958,21 @@ initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1
                 </div>
               </div>
               ${data.description ? `<p class="text-sm text-instagram-500 line-clamp-2">${DOMPurify.sanitize(convertHashtagsToLinks(data.description, false))}</p>` : ''} 
-              <div class="mt-2 flex justify-between items-center text-instagram-400 text-lg">
-                <div class="actions" data-photo-id="${telegramId}">
-                  <button type="button" class="share-button hover:text-instagram-600 mr-3" 
-                          class="share-button hover:text-instagram-600 mr-3" data-telegram-id="${telegramId}" data-description="${encodeURIComponent(data.description || '')}" 
+              <div class="mt-2 flex flex-wrap sm:flex-nowrap gap-2 items-center justify-between text-instagram-400 text-lg">
+                <div class="actions flex items-center" data-photo-id="${telegramId}">
+                  <span class="bluesky-icons flex items-center"></span>
+                  <button type="button" class="share-button hover:text-instagram-600 ml-3" 
+                          data-telegram-id="${telegramId}" data-description="${encodeURIComponent(data.description || '')}" 
                           title="Compartir">
                     <i class="fa-solid fa-share-nodes"></i>
                   </button>
                   ${isAppropriate ? `
-                    <a href="${fullPath}" download class="text-instagram-500 hover:text-instagram-700 mr-3" title="Descargar foto">
+                    <a href="${fullPath}" download class="text-instagram-500 hover:text-instagram-700 ml-3" title="Descargar foto">
                       <i class="fa-solid fa-download"></i>
                     </a>
                   ` : ''}
-                  <span class="bluesky-icons"></span>
-                  
                 </div>
-                <a class="text-xs text-instagram-400 hover:text-instagram-700" href="https://creativecommons.org/licenses/by-sa/4.0/deed.es" target="_blank" rel="noopener noreferrer">CC BY-SA 4.0</a>
+                <a class="text-xs text-instagram-400 hover:text-instagram-700 shrink-0" href="https://creativecommons.org/licenses/by-sa/4.0/deed.es" target="_blank" rel="noopener noreferrer">CC BY-SA 4.0</a>
               </div>`;
 
           // If image is inappropriate, mark it

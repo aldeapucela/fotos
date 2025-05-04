@@ -175,3 +175,10 @@ body {
   .filter-active {
     @apply bg-instagram-100 dark:bg-instagram-700 text-instagram-900 dark:text-instagram-50;
   }
+
+  @media (max-width: 640px) {
+    .list-view .actions {
+      flex-wrap: nowrap !important;
+      width: auto;
+    }
+  }
