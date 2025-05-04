@@ -302,14 +302,18 @@ function openLightbox(imgSrc, data) {
   const blueskyDiv = document.getElementById('bluesky-comments');
   const commentsBtn = document.getElementById('lightbox-chat-btn');
   const commentsBadge = document.getElementById('lightbox-comments-count');
+  
+  // Reset panel state
+  closeBlueskyPanel();
+  
   if (blueskyDiv) {
     blueskyDiv.innerHTML = '';
-    blueskyDiv.style.display = 'none';
   }
   if (commentsBadge) {
     commentsBadge.textContent = '';
     commentsBadge.style.display = 'none';
   }
+  
   // Consultar el número de comentarios y actualizar el badge
   if (typeof loadBlueskyComments === 'function' && commentsBadge && commentsBtn) {
     loadBlueskyComments(canonicalUrl, true).then(async (result) => {
@@ -362,26 +366,6 @@ function openLightbox(imgSrc, data) {
       }
     });
   }
-  // Evento para mostrar/ocultar comentarios al hacer clic
-  if (commentsBtn && blueskyDiv) {
-    commentsBtn.onclick = async () => {
-      if (blueskyDiv.style.display === 'none' || blueskyDiv.innerHTML === '') {
-        blueskyDiv.innerHTML = '<div class="text-center text-instagram-500 py-4">Cargando comentarios...</div>';
-        blueskyDiv.style.display = '';
-        await loadBlueskyComments(canonicalUrl);
-        // --- BLOQUE NUEVO: Evitar cierre del lightbox al hacer scroll/touch en comentarios ---
-        ['touchstart', 'touchmove', 'wheel'].forEach(ev => {
-          blueskyDiv.addEventListener(ev, function(e) {
-            e.stopPropagation();
-          }, { passive: false });
-        });
-        // --- FIN BLOQUE NUEVO ---
-      } else {
-        blueskyDiv.style.display = 'none';
-      }
-    };
-  }
-
   // Get all visible photos for navigation
   visiblePhotos = Array.from(document.querySelectorAll('.photo-card:not(.hidden)')).map(card => {
     // Check if the photo is appropriate
@@ -1547,3 +1531,82 @@ document.addEventListener('DOMContentLoaded', function () {
     loadElements();
   }
 });
+
+// --- BLUESKY COMMENTS FLOATING PANEL ANIMACIÓN ABAJO-ARRIBA ---
+const blueskyPanel = document.getElementById('bluesky-comments-panel');
+const blueskyPanelInner = document.getElementById('bluesky-comments-panel-inner');
+const blueskyCommentsBtn = document.getElementById('lightbox-chat-btn');
+const blueskyPanelClose = document.getElementById('close-bluesky-comments');
+
+function openBlueskyPanel() {
+  if (!blueskyPanelInner) return;
+  blueskyPanel.classList.add('pointer-events-auto');
+  blueskyPanelInner.classList.remove('translate-y-full', 'opacity-0');
+  blueskyPanelInner.classList.add('translate-y-0', 'opacity-100');
+}
+
+function closeBlueskyPanel() {
+  if (!blueskyPanelInner) return;
+  blueskyPanel.classList.remove('pointer-events-auto');
+  blueskyPanelInner.classList.remove('translate-y-0', 'opacity-100');
+  blueskyPanelInner.classList.add('translate-y-full', 'opacity-0');
+}
+
+if (blueskyCommentsBtn) {
+  blueskyCommentsBtn.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    // Obtener la URL canónica de la foto actual
+    const img = document.getElementById('lightbox-img');
+    if (img && img.src) {
+      const filename = img.src.split('/').pop();
+      const telegramId = filename.replace('.jpg', '').replace('.png', '').replace('.jpeg', '');
+      const canonicalUrl = window.location.origin + window.location.pathname + '#' + telegramId;
+      const blueskyDiv = document.getElementById('bluesky-comments');
+      
+      // Mostrar loader, abrir panel y cargar comentarios cada vez
+      if (blueskyDiv) {
+        blueskyDiv.innerHTML = '<div class="text-center text-instagram-500 py-4">Cargando comentarios...</div>';
+      }
+      openBlueskyPanel();
+      
+      // Cargar comentarios siempre
+      if (typeof window.loadBlueskyComments === 'function') {
+        await window.loadBlueskyComments(canonicalUrl);
+      }
+    }
+  });
+}
+if (blueskyPanelClose) {
+  blueskyPanelClose.addEventListener('click', (e) => {
+    e.stopPropagation();
+    closeBlueskyPanel();
+  });
+}
+if (blueskyPanel) {
+  blueskyPanel.addEventListener('click', (e) => {
+    if (e.target === blueskyPanel) closeBlueskyPanel();
+  });
+}
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeBlueskyPanel();
+});
+
+if (blueskyPanelInner) {
+  // Prevenir que todos los eventos táctiles del panel se propaguen
+  ['touchstart', 'touchmove', 'touchend'].forEach(event => {
+    blueskyPanelInner.addEventListener(event, (e) => {
+      e.stopPropagation();
+    }, { passive: false });
+  });
+  
+  // También prevenir que el scroll del panel afecte al lightbox
+  blueskyPanelInner.addEventListener('scroll', (e) => {
+    e.stopPropagation();
+  }, { passive: true });
+}
+
+if (blueskyPanel) {
+  blueskyPanel.addEventListener('click', (e) => {
+    if (e.target === blueskyPanel) closeBlueskyPanel();
+  });
+}
