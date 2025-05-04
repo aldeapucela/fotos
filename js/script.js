@@ -346,7 +346,8 @@ function openLightbox(imgSrc, data) {
         likesEl = document.createElement('a');
         likesEl.id = 'lightbox-likes-count';
         likesEl.className = 'flex items-center gap-1 text-instagram-500 hover:text-instagram-700 text-xl';
-        commentsBtn.parentNode.insertBefore(likesEl, commentsBtn.nextSibling);
+        // Cambiado: insertar likesEl antes de commentsBtn para que likes salga primero
+        commentsBtn.parentNode.insertBefore(likesEl, commentsBtn);
       }
       if (threadUrl) {
         likesEl.href = threadUrl;

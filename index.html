@@ -331,8 +331,11 @@
             </div>
           </div>
         </div>
-        <!-- Bluesky Comments -->
-        <div id="bluesky-comments" class="mt-6 bg-instagram-50 dark:bg-instagram-900 rounded p-4 max-h-96 overflow-y-auto"></div>
+        <!-- Bluesky Comments como panel deslizable -->
+        <div id="bluesky-comments" class="bluesky-panel fixed left-0 right-0 bottom-0 z-50 translate-y-full transition-transform duration-300 ease-in-out max-h-[80vh] bg-white dark:bg-instagram-900 rounded-t-2xl shadow-2xl p-0 overflow-y-auto">
+          <div class="bluesky-panel-handle w-12 h-1.5 bg-instagram-300 dark:bg-instagram-700 rounded-full mx-auto mt-2 mb-2"></div>
+          <!-- El contenido de los comentarios se inyecta aquí por JS -->
+        </div>
       </div>
     </div>
   </div>
@@ -342,7 +345,7 @@
   <!-- Bluesky Comments JS -->
   <script src="js/bluesky-comments.js?202504231310"></script>
   <!-- Load our JavaScript -->
-  <script src="js/script.js?202505041111"></script>
+  <script src="js/script.js?202505041140"></script>
   <!-- Load Matomo Analytics -->
   <script src="js/matomo.js"></script>
 </body>
