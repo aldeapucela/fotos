@@ -91,7 +91,7 @@ def generate_rss():
                 html_desc += f'<p>{description}</p>'
             if author:
                 image_id = path.replace('.jpg', '')
-                html_desc += f'<p>Autor: {author} - CC BY-SA 4.0</p>'
+                html_desc += f'<p>Autor/a: {author} - CC BY-SA 4.0</p>'
                 html_desc += f'<p><a href="https://t.me/AldeaPucela/27202/{image_id}">Ver original</a></p>'
             item_desc.text = html_desc
             
