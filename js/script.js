@@ -345,7 +345,7 @@ function openLightbox(imgSrc, data) {
       if (!likesEl) {
         likesEl = document.createElement('a');
         likesEl.id = 'lightbox-likes-count';
-        likesEl.className = 'flex items-center gap-1 text-instagram-500 hover:text-instagram-700 text-base';
+        likesEl.className = 'flex items-center gap-1 text-instagram-500 hover:text-instagram-700 text-xl';
         commentsBtn.parentNode.insertBefore(likesEl, commentsBtn.nextSibling);
       }
       if (threadUrl) {
@@ -353,10 +353,10 @@ function openLightbox(imgSrc, data) {
         likesEl.target = '_blank';
         likesEl.rel = 'noopener noreferrer';
         likesEl.style.display = '';
-        likesEl.innerHTML = `<i class="fa-regular fa-heart"></i> <span>${likeCount}</span>`;
+        likesEl.innerHTML = `<i class="fa-regular fa-heart"></i> <span class="text-base">${likeCount}</span>`;
       } else {
         likesEl.removeAttribute('href');
-        likesEl.innerHTML = `<i class="fa-regular fa-heart"></i> <span>0</span>`;
+        likesEl.innerHTML = `<i class="fa-regular fa-heart"></i> <span class="text-base">0</span>`;
         likesEl.style.display = 'none';
       }
     });
