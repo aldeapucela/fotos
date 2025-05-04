@@ -879,7 +879,7 @@ initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1
         
         // Photo grid
         const grid = document.createElement('div');
-        grid.className = 'grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 gap-1 sm:gap-1 px-2';
+        grid.className = 'grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 gap-0.5 sm:gap-0.5';
 
         // Create photo cards
         semanaObj.fotos.forEach(data => {
