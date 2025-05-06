@@ -256,7 +256,8 @@ function safeSetContenido(html) {
     console.warn("Elemento #contenido no existe en esta página. No se puede actualizar el contenido principal.");
     return;
   }
-  contenido.innerHTML = html;
+  // Sanitiza el HTML generado antes de insertarlo
+  contenido.innerHTML = DOMPurify.sanitize(html);
 }
 
 const searchInput = document.getElementById('searchInput');
@@ -1477,7 +1478,8 @@ async function loadTags() {
       const photoCollage = latest_photos.length > 0 
         ? `<div class=\"photo-collage\">\n${latest_photos.map(photo => `\n<img src=\"/files/${photo}\" loading=\"lazy\" class=\"opacity-60 transition-opacity duration-300\" alt=\"\">`).join('')}\n</div>`
         : '';
-      tagEl.innerHTML = `
+      // Sanitiza el HTML generado antes de insertarlo
+      tagEl.innerHTML = DOMPurify.sanitize(`
         <div class="p-3">
           <div class="flex items-center justify-between">
             <div>
@@ -1488,7 +1490,7 @@ async function loadTags() {
           </div>
         </div>
         ${photoCollage}
-      `;
+      `);
       tagsList.appendChild(tagEl);
     });
   } catch (error) {
@@ -1515,7 +1517,8 @@ async function loadElements() {
       const photoCollage = latest_photos.length > 0 
         ? `<div class=\"photo-collage\">\n${latest_photos.map(photo => `\n<img src=\"/files/${photo}\" loading=\"lazy\" class=\"opacity-60 transition-opacity duration-300\" alt=\"\">`).join('')}\n</div>`
         : '';
-      elementEl.innerHTML = `
+      // Sanitiza el HTML generado antes de insertarlo
+      elementEl.innerHTML = DOMPurify.sanitize(`
         <div class="p-3">
           <div class="flex items-center justify-between">
             <div>
@@ -1526,7 +1529,7 @@ async function loadElements() {
           </div>
         </div>
         ${photoCollage}
-      `;
+      `);
       elementsList.appendChild(elementEl);
     });
   } catch (error) {
