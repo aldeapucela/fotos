@@ -2,6 +2,119 @@
   Script principal
 */
 
+// Variables globales para filtros
+let currentPopularitySort = 'default'; // 'default', 'likes', 'comments'
+let allPhotos = []; // Para almacenar todas las fotos
+let blueskyCache = {}; // Para almacenar datos de Bluesky
+
+// Función para ordenar fotos por popularidad
+function sortPhotosByPopularity(photos, sortType) {
+  if (sortType === 'default') {
+    return photos; // Mantener orden original
+  }
+  
+  const cache = window._blueskyCountersCache || {};
+  
+  return photos.sort((a, b) => {
+    const urlA = `${window.location.origin}${window.location.pathname}#${getPhotoIdFromPath(a.path)}`;
+    const urlB = `${window.location.origin}${window.location.pathname}#${getPhotoIdFromPath(b.path)}`;
+    
+    const countersA = cache[urlA] || { commentCount: 0, likeCount: 0 };
+    const countersB = cache[urlB] || { commentCount: 0, likeCount: 0 };
+    
+    if (sortType === 'likes') {
+      return countersB.likeCount - countersA.likeCount;
+    } else if (sortType === 'comments') {
+      return countersB.commentCount - countersA.commentCount;
+    }
+    return 0;
+  });
+}
+
+// Función auxiliar para extraer el ID de foto desde el path
+function getPhotoIdFromPath(path) {
+  const filename = path.split('/').pop() || '';
+  return filename.replace('.jpg', '').replace('.png', '').replace('.jpeg', '');
+}
+
+// Función para aplicar el filtro de popularidad
+function applyPopularityFilter(sortType) {
+  currentPopularitySort = sortType;
+  
+  // Actualizar estado visual del dropdown
+  const popularityDropdown = document.getElementById('popularityDropdown');
+  const popularityButton = document.getElementById('popularityDropdownButton');
+  const popularityFilter = document.getElementById('popularityFilter');
+  const popularityName = document.getElementById('popularityName');
+  
+  if (sortType === 'default') {
+    // Ocultar indicador de filtro
+    if (popularityFilter) popularityFilter.classList.add('hidden');
+  } else {
+    // Mostrar indicador de filtro
+    if (popularityFilter) popularityFilter.classList.remove('hidden');
+    if (popularityName) {
+      popularityName.textContent = sortType === 'likes' ? 'Por likes' : 'Por comentarios';
+    }
+  }
+  
+  // Re-renderizar las fotos con el nuevo orden
+  rerenderPhotosWithPopularity();
+  
+  // Cerrar dropdown
+  if (popularityDropdown) popularityDropdown.classList.add('hidden');
+  if (popularityButton) {
+    const icon = popularityButton.querySelector('.fa-chevron-down');
+    if (icon) icon.style.transform = '';
+  }
+  
+  // Cerrar sidebar
+  toggleSidebar();
+}
+
+// Función para re-renderizar fotos con el orden de popularidad aplicado
+function rerenderPhotosWithPopularity() {
+  const dateGroups = document.querySelectorAll('.date-group');
+  
+  dateGroups.forEach(group => {
+    const grid = group.querySelector('div:last-child'); // El grid de fotos
+    if (!grid) return;
+    
+    // Obtener todas las fotos del grupo
+    const photoCards = Array.from(grid.querySelectorAll('.photo-card'));
+    
+    // Extraer datos de las fotos
+    const photosData = photoCards.map(card => {
+      const img = card.querySelector('img');
+      const path = img ? img.dataset.src : '';
+      return {
+        element: card,
+        path: path
+      };
+    });
+    
+    // Ordenar según el filtro actual
+    const sortedPhotos = sortPhotosByPopularity(photosData, currentPopularitySort);
+    
+    // Limpiar el grid y re-insertar en el nuevo orden
+    grid.innerHTML = '';
+    sortedPhotos.forEach(photo => {
+      grid.appendChild(photo.element);
+    });
+  });
+}
+
+// Función para limpiar filtro de popularidad
+function clearPopularityFilter() {
+  applyPopularityFilter('default');
+  
+  // Actualizar botón del dropdown
+  const popularityButton = document.getElementById('popularityDropdownButton');
+  if (popularityButton) {
+    popularityButton.innerHTML = 'Por fecha <i class="fa-solid fa-chevron-down ml-1 transition-transform"></i>';
+  }
+}
+
 // URL handling functions
 function getPhotoIdFromUrl() {
     const hash = window.location.hash;
@@ -1332,8 +1445,10 @@ document.addEventListener('keydown', (e) => {
 // Dropdown functionality
 const dateDropdownButton = document.getElementById('dateDropdownButton');
 const tagDropdownButton = document.getElementById('tagDropdownButton');
+const popularityDropdownButton = document.getElementById('popularityDropdownButton');
 const dateDropdown = document.getElementById('dateDropdown');
 const tagDropdown = document.getElementById('tagDropdown');
+const popularityDropdown = document.getElementById('popularityDropdown');
 
 // Definir dateDropdownOptions solo si existe dateDropdown
 const dateDropdownOptions = dateDropdown ? dateDropdown.querySelectorAll('[data-filter]') : null;
@@ -1371,6 +1486,10 @@ if (tagDropdownButton && tagDropdown) {
   tagDropdownButton.addEventListener('click', () => toggleDropdown(tagDropdown, tagDropdownButton));
 }
 
+if (popularityDropdownButton && popularityDropdown) {
+  popularityDropdownButton.addEventListener('click', () => toggleDropdown(popularityDropdown, popularityDropdownButton));
+}
+
 if (dateDropdownOptions && dateDropdownOptions.forEach) {
   dateDropdownOptions.forEach(option => {
     option.addEventListener('click', (e) => {
@@ -1394,6 +1513,24 @@ if (tagDropdownOptions && tagDropdownOptions.forEach) {
         // Reset chevron
         const icon = tagDropdownButton.querySelector('.fa-chevron-down');
         if (icon) icon.style.transform = '';
+      }
+    });
+  });
+}
+
+// Event listeners para opciones del dropdown de popularidad
+if (popularityDropdown) {
+  const popularityOptions = popularityDropdown.querySelectorAll('button');
+  popularityOptions.forEach(option => {
+    option.addEventListener('click', (e) => {
+      e.preventDefault();
+      const sortType = option.dataset.sort || 'default';
+      applyPopularityFilter(sortType);
+      
+      // Actualizar el texto del botón
+      if (popularityDropdownButton) {
+        const buttonText = option.textContent;
+        popularityDropdownButton.innerHTML = `${buttonText} <i class="fa-solid fa-chevron-down ml-1 transition-transform"></i>`;
       }
     });
   });
@@ -1466,6 +1603,10 @@ if (clearDateFilterBtn) clearDateFilterBtn.addEventListener('click', () => {
   const dateFilter = document.getElementById('dateFilter');
   if (dateFilter) dateFilter.classList.add('hidden');
 });
+
+// Clear popularity filter
+const clearPopularityFilterBtn = document.getElementById('clearPopularityFilterBtn');
+if (clearPopularityFilterBtn) clearPopularityFilterBtn.addEventListener('click', clearPopularityFilter);
 
 // --- Funciones para etiquetas/index.html y elementos/index.html ---
 

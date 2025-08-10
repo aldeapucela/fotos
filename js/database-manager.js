@@ -134,6 +134,82 @@ class DatabaseManager {
   }
 
   /**
+   * Obtiene estadísticas de Bluesky para una imagen desde la caché local
+   * @param {string} imagePath - Ruta de la imagen
+   * @returns {Object|null} - Objeto con like_count, comment_count, repost_count, last_updated o null
+   */
+  async getBlueskyStatsFromCache(imagePath) {
+    try {
+      const db = await this.getDatabase();
+      
+      // Limpiar el path de /files/ si lo tiene
+      let cleanPath = imagePath.replace(/^\/files\//, '');
+      
+      // Si no tiene extensión, probamos con las comunes
+      const possiblePaths = [];
+      
+      if (!cleanPath.includes('.')) {
+        possiblePaths.push(cleanPath + '.jpg');
+        possiblePaths.push(cleanPath + '.jpeg');
+        possiblePaths.push(cleanPath + '.png');
+      } else {
+        possiblePaths.push(cleanPath);
+      }
+      
+      // Intentar con cada posible path
+      for (const tryPath of possiblePaths) {
+        const stmt = db.prepare(`
+          SELECT bic.like_count, bic.comment_count, bic.repost_count, bic.last_updated,
+                 bp.post_id
+          FROM bluesky_interactions_cache bic
+          JOIN imagenes i ON bic.image_id = i.id
+          JOIN bluesky_posts bp ON bp.image_id = i.id
+          WHERE i.path = ?
+        `);
+        stmt.bind([tryPath]);
+        
+        if (stmt.step()) {
+          const result = stmt.getAsObject();
+          stmt.free();
+          return {
+            like_count: result.like_count || 0,
+            comment_count: result.comment_count || 0,
+            repost_count: result.repost_count || 0,
+            last_updated: result.last_updated,
+            post_id: result.post_id,
+            from_cache: true
+          };
+        }
+        stmt.free();
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Error obteniendo stats de caché:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Verifica si las estadísticas cacheadas son recientes (menos de 12 horas)
+   * @param {string} lastUpdated - Timestamp de la última actualización
+   * @returns {boolean} - true si son recientes, false si son antiguas
+   */
+  isCacheRecent(lastUpdated) {
+    if (!lastUpdated) return false;
+    
+    try {
+      const lastUpdate = new Date(lastUpdated.replace(' ', 'T'));
+      const now = new Date();
+      const hoursDiff = (now - lastUpdate) / (1000 * 60 * 60);
+      return hoursDiff < 12;
+    } catch (error) {
+      console.error('Error verificando fecha de caché:', error);
+      return false;
+    }
+  }
+
+  /**
    * Ejecuta todas las consultas iniciales de fotos
    */
   async getPhotosData() {

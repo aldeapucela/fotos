@@ -41,25 +41,55 @@ window.getBlueskyThreadStats = async function(photoUrl) {
       throw new Error('DatabaseManager no está cargado');
     }
     
-    // Usar el DatabaseManager para obtener el post_id
-    const postId = await window.databaseManager.getBlueskyPostId(imagePath);
+    // Primero intentar obtener desde la caché
+    const cachedStats = await window.databaseManager.getBlueskyStatsFromCache(imagePath);
+    
+    if (cachedStats && window.databaseManager.isCacheRecent(cachedStats.last_updated)) {
+      // Usar datos de la caché si son recientes (menos de 12 horas)
+      const threadUrl = `https://bsky.app/profile/${BLUESKY_THREAD_HANDLE}/post/${cachedStats.post_id}`;
+      console.log(`💾 Usando stats de caché para ${imagePath}: ${cachedStats.like_count} likes`);
+      return { 
+        likeCount: cachedStats.like_count, 
+        commentCount: cachedStats.comment_count,
+        repostCount: cachedStats.repost_count,
+        threadUrl,
+        fromCache: true 
+      };
+    }
+    
+    // Si no hay caché o es antigua, usar la API (fallback al comportamiento original)
+    const postId = cachedStats ? cachedStats.post_id : await window.databaseManager.getBlueskyPostId(imagePath);
     
     if (!postId) {
-      return { likeCount: 0, threadUrl: null };
+      return { likeCount: 0, commentCount: 0, threadUrl: null };
     }
     
     const threadUrl = `https://bsky.app/profile/${BLUESKY_THREAD_HANDLE}/post/${postId}`;
     const threadApiUrl = `https://public.api.bsky.app/xrpc/app.bsky.feed.getPostThread?uri=at://${BLUESKY_THREAD_HANDLE}/app.bsky.feed.post/${postId}`;
+    console.log(`🌐 Consultando API de Bluesky para ${imagePath} (caché ${cachedStats ? 'antigua' : 'no encontrada'})`);
+    
     const threadResponse = await fetch(threadApiUrl, { headers: { Accept: "application/json" } });
     let likeCount = 0;
+    let commentCount = 0;
+    let repostCount = 0;
+    
     if (threadResponse.ok) {
       const threadData = await threadResponse.json();
       likeCount = threadData.thread?.post?.likeCount || 0;
+      commentCount = (threadData.thread?.replies || []).length;
+      repostCount = threadData.thread?.post?.repostCount || 0;
     }
-    return { likeCount, threadUrl };
+    
+    return { 
+      likeCount, 
+      commentCount,
+      repostCount,
+      threadUrl,
+      fromCache: false 
+    };
   } catch (error) {
     console.error('Error en getBlueskyThreadStats:', error);
-    return { likeCount: 0, threadUrl: null };
+    return { likeCount: 0, commentCount: 0, threadUrl: null };
   }
 }
 
@@ -85,6 +115,22 @@ async function loadBlueskyComments(photoUrl, returnCountOnly = false) {
     // Verificar que DatabaseManager esté disponible
     if (!window.databaseManager) {
       throw new Error('DatabaseManager no está cargado');
+    }
+    
+    // Si solo necesitamos contadores, intentar usar la caché primero
+    if (returnCountOnly) {
+      const cachedStats = await window.databaseManager.getBlueskyStatsFromCache(imagePath);
+      
+      if (cachedStats && window.databaseManager.isCacheRecent(cachedStats.last_updated)) {
+        const threadUrl = `https://bsky.app/profile/${BLUESKY_THREAD_HANDLE}/post/${cachedStats.post_id}`;
+        console.log(`💾 Usando contadores de caché para ${imagePath}`);
+        return { 
+          commentCount: cachedStats.comment_count, 
+          likeCount: cachedStats.like_count,
+          repostCount: cachedStats.repost_count, 
+          threadUrl 
+        };
+      }
     }
     
     // Usar el DatabaseManager para obtener el post_id (reutiliza la BD ya cargada)

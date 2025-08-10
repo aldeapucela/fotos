@@ -32,7 +32,6 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="js/tailwind-config.js"></script>
-  <script src="js/database-manager.js"></script>
   <link rel="stylesheet" href="css/style.css?202504172016">
 </head>
 
@@ -99,6 +98,10 @@
         <div class="p-4 border-b border-instagram-200 dark:border-instagram-700">
           <h3 class="text-sm font-medium mb-2">Explora</h3>
           <nav class="space-y-2">
+              <a href="/populares/" class="flex items-center gap-2 text-instagram-500 hover:text-instagram-700 py-1">
+                <i class="fa-solid fa-fire w-5"></i>
+                <span>Fotos populares</span>
+              </a>
               <a href="/etiquetas/" class="flex items-center gap-2 text-instagram-500 hover:text-instagram-700 py-1">
                 <i class="fa-solid fa-tags w-5"></i>
                 <span>Etiquetas populares</span>
@@ -142,7 +145,7 @@
           </div>
         
           <!-- Tag filters -->
-          <div>
+          <div class="mb-4">
             <button id="tagDropdownButton" class="w-full flex items-center justify-between text-left py-2 px-3 text-sm font-medium rounded bg-instagram-100 dark:bg-instagram-700 hover:bg-instagram-200 dark:hover:bg-instagram-600">
               <span>
                 <i class="fa-solid fa-tags mr-2"></i>
@@ -153,6 +156,33 @@
             <div id="tagDropdown" class="hidden mt-1 bg-white dark:bg-instagram-700 rounded shadow-lg max-h-64 overflow-y-auto">
               <div class="p-2 space-y-1">
                 <!-- Tags will be added here dynamically -->
+              </div>
+            </div>
+          </div>
+          
+          <!-- Popularity sort filters -->
+          <div>
+            <button id="popularityDropdownButton" class="w-full flex items-center justify-between text-left py-2 px-3 text-sm font-medium rounded bg-instagram-100 dark:bg-instagram-700 hover:bg-instagram-200 dark:hover:bg-instagram-600">
+              <span>
+                <i class="fa-solid fa-fire mr-2"></i>
+                Por popularidad
+              </span>
+              <i class="fa-solid fa-chevron-down transition-transform"></i>
+            </button>
+            <div id="popularityDropdown" class="hidden mt-1 bg-white dark:bg-instagram-700 rounded shadow-lg">
+              <div class="p-2 space-y-1">
+                <button class="popularity-sort popularity-sort-active w-full text-left py-1.5 px-3 text-sm rounded hover:bg-instagram-100 dark:hover:bg-instagram-600" data-sort="default">
+                  <i class="fa-regular fa-clock mr-2"></i>
+                  Por fecha (predeterminado)
+                </button>
+                <button class="popularity-sort w-full text-left py-1.5 px-3 text-sm rounded hover:bg-instagram-100 dark:hover:bg-instagram-600" data-sort="likes">
+                  <i class="fa-regular fa-heart mr-2"></i>
+                  Por número de likes
+                </button>
+                <button class="popularity-sort w-full text-left py-1.5 px-3 text-sm rounded hover:bg-instagram-100 dark:hover:bg-instagram-600" data-sort="comments">
+                  <i class="fa-regular fa-comment mr-2"></i>
+                  Por número de comentarios
+                </button>
               </div>
             </div>
           </div>
@@ -227,6 +257,13 @@
   <div id="searchFilter" class="hidden fixed bottom-4 left-1/2 -translate-x-1/2 bg-instagram-600 text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2 z-50">
     <span id="searchTerm"></span>
     <button id="clearSearchBtn" class="ml-2 hover:text-instagram-200">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+  </div>
+  <!-- Popularity filter indicator -->
+  <div id="popularityFilter" class="hidden fixed bottom-4 left-1/2 -translate-x-1/2 bg-orange-600 text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2 z-50">
+    <span id="popularityName"></span>
+    <button id="clearPopularityFilterBtn" class="ml-2 hover:text-orange-200">
       <i class="fa-solid fa-xmark"></i>
     </button>
   </div>
@@ -344,10 +381,12 @@
     </div>
   </div>
 
+  <!-- Database Manager -->
+  <script src="js/database-manager.js?202508101142"></script>
   <!-- Bluesky Comments JS -->
-  <script src="js/bluesky-comments.js?202504231310"></script>
+  <script src="js/bluesky-comments.js?202508101142"></script>
   <!-- Load our JavaScript -->
-  <script src="js/script.js?202508101304"></script>
+  <script src="js/script.js?202508101431"></script>
   <!-- Load Matomo Analytics -->
   <script src="js/matomo.js"></script>
 </body>

@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="
+    default-src 'self';
+    script-src 'self' https://cdnjs.cloudflare.com https://cdn.tailwindcss.com https://stats.aldeapucela.org 'wasm-unsafe-eval';
+    style-src 'self' https://cdnjs.cloudflare.com 'unsafe-inline';
+    img-src 'self' data: https://fotos.aldeapucela.org https://aldeapucela.org https://cdn.bsky.app;
+    font-src 'self' https://cdnjs.cloudflare.com;
+    connect-src 'self' https://stats.aldeapucela.org https://cdnjs.cloudflare.com https://public.api.bsky.app;
+    object-src 'none';
+    base-uri 'self';
+    worker-src 'self' blob:;
+  ">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+
+  <link rel="icon" type="image/jpeg" href="https://aldeapucela.org/img/favicon.png">
+  <title>Fotos populares - Fotos de Valladolid - Aldea Pucela</title>
+  <link rel="alternate" type="application/rss+xml" title="Fotos de Valladolid - Aldea Pucela" href="../feed.xml" />
+
+ <!-- Metadatos para preview en redes sociales -->
+ <meta property="og:title" content="Fotos populares - Fotos de Valladolid - Aldea Pucela">
+ <meta property="og:type" content="website">
+ <meta property="og:description" content="Las fotos más populares de Valladolid basadas en likes y comentarios">
+ <meta property="og:image" content="https://fotos.aldeapucela.org/img/preview.png">
+ <meta property="og:url" content="https://fotos.aldeapucela.org/populares/">
+ <meta name="twitter:card" content="summary_small_image">
+ 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.13.0/sql-wasm.js" integrity="sha512-Yra4xuTWinXfBpG2ftgDX8MVmMiOev1FtqiYs51+kEna/5peD0kZqAL1syYCH61f9gxmAFidIJz42IKcRhWMkw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.2.3/purify.min.js" integrity="sha512-Ll+TuDvrWDNNRnFFIM8dOiw7Go7dsHyxRp4RutiIFW/wm3DgDmCnRZow6AqbXnCbpWu93yM1O34q+4ggzGeXVA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="../js/tailwind-config.js"></script>
+  <link rel="stylesheet" href="../css/style.css?202504172016">
+</head>
+
+<body class="bg-instagram-50 dark:bg-instagram-900 text-instagram-900 dark:text-instagram-50 font-sans">
+
+  <!-- Header with navigation -->  
+  <header class="sticky top-0 z-40 bg-white dark:bg-instagram-800 border-b border-instagram-200 dark:border-instagram-700 shadow-sm">
+    <div class="container mx-auto px-4 py-3">
+      <!-- Top row with logo and menu button -->
+      <div class="grid [grid-template-columns:auto_1fr_auto] items-center">
+  <div class="flex justify-start">
+    <a href="../" class="text-instagram-500 hover:text-instagram-700" title="Galería principal">
+      <i class="fa-solid fa-arrow-left"></i>
+    </a>
+  </div>
+  <div class="flex justify-center">
+    <h1 id="scrollTopTitle" class="font-light tracking-wide px-2 py-0.5 rounded text-center text-instagram-500 dark:text-instagram-300 whitespace-nowrap overflow-hidden text-ellipsis cursor-pointer" style="font-family: 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;">Fotos populares</h1>
+  </div>
+  <div class="flex justify-end">
+    <button id="menuToggle" class="text-instagram-500 hover:text-instagram-900 transition-colors">
+      <i class="fa-solid fa-bars text-xl"></i>
+    </button>
+  </div>
+</div>
+    </div>
+  </header>
+
+  <!-- License notice banner -->
+<div class="bg-instagram-100 dark:bg-instagram-800 text-instagram-700 dark:text-instagram-300 text-xs px-4 py-3">
+  <div class="container mx-auto flex items-center">
+    <a href="https://aldeapucela.org/" class="text-instagram-500 hover:text-instagram-700" title="Aldea Pucela">
+      <img src="../img/preview.png" alt="Aldea Pucela Avatar" class="w-12 h-12 rounded-full mr-4 border-2 border-instagram-400 shadow" style="object-fit:cover;" />
+    </a>
+    <div class="flex flex-col text-left">
+      <p class="mb-1">Creadas por la comunidad <a class="underline" href="https://aldeapucela.org/">Aldea Pucela</a></p>
+      <p>Debe citase autor, url y licencia <a href="https://creativecommons.org/licenses/by-sa/4.0/deed.es" target="_blank" class="text-instagram-900 dark:text-instagram-300 underline">CC BY-SA 4.0</a></p>
+    </div>
+  </div>
+</div>
+
+  <!-- Sidebar -->
+  <div id="sidebar" class="fixed top-0 right-0 h-full w-80 bg-white dark:bg-instagram-800 shadow-lg transform translate-x-full transition-transform duration-300 ease-in-out z-50">
+    <div class="flex flex-col h-full">
+      <!-- Sidebar header -->
+      <div class="p-4 border-b border-instagram-200 dark:border-instagram-700 flex justify-between items-center">
+        <h2 class="text-lg font-medium">Filtros</h2>
+        <button id="closeSidebar" class="text-instagram-500 hover:text-instagram-700">
+          <i class="fa-solid fa-xmark text-xl"></i>
+        </button>
+      </div>
+
+      <!-- Sidebar content -->
+      <div class="flex-1 overflow-y-auto">
+        <!-- Period filters -->
+        <div class="p-4 border-b border-instagram-200 dark:border-instagram-700">
+          <h3 class="text-sm font-medium mb-2">Período</h3>
+          
+          <div class="space-y-1">
+            <button id="period-all" class="period-filter period-active w-full text-left py-2 px-3 text-sm rounded bg-instagram-100 dark:bg-instagram-700 hover:bg-instagram-200 dark:hover:bg-instagram-600" data-period="all">
+              <i class="fa-solid fa-infinity mr-2"></i>
+              Todo el tiempo
+            </button>
+            <button id="period-year" class="period-filter w-full text-left py-2 px-3 text-sm rounded hover:bg-instagram-100 dark:hover:bg-instagram-600" data-period="year">
+              <i class="fa-solid fa-calendar-check mr-2"></i>
+              Último año
+            </button>
+            <button id="period-6months" class="period-filter w-full text-left py-2 px-3 text-sm rounded hover:bg-instagram-100 dark:hover:bg-instagram-600" data-period="6months">
+              <i class="fa-solid fa-calendar-minus mr-2"></i>
+              Últimos 6 meses
+            </button>
+            <button id="period-month" class="period-filter w-full text-left py-2 px-3 text-sm rounded hover:bg-instagram-100 dark:hover:bg-instagram-600" data-period="month">
+              <i class="fa-solid fa-calendar-days mr-2"></i>
+              Último mes
+            </button>
+          </div>
+        </div>
+
+        <!-- Sort by filters -->
+        <div class="p-4 border-b border-instagram-200 dark:border-instagram-700">
+          <h3 class="text-sm font-medium mb-2">Ordenar por</h3>
+          
+          <div class="space-y-1">
+            <button id="sort-likes" class="sort-filter sort-active w-full text-left py-2 px-3 text-sm rounded bg-instagram-100 dark:bg-instagram-700 hover:bg-instagram-200 dark:hover:bg-instagram-600" data-sort="likes">
+              <i class="fa-regular fa-heart mr-2"></i>
+              Más likes
+            </button>
+            <button id="sort-comments" class="sort-filter w-full text-left py-2 px-3 text-sm rounded hover:bg-instagram-100 dark:hover:bg-instagram-600" data-sort="comments">
+              <i class="fa-regular fa-comment mr-2"></i>
+              Más comentarios
+            </button>
+            <button id="sort-engagement" class="sort-filter w-full text-left py-2 px-3 text-sm rounded hover:bg-instagram-100 dark:hover:bg-instagram-600" data-sort="engagement">
+              <i class="fa-solid fa-fire mr-2"></i>
+              Más interacción
+            </button>
+          </div>
+        </div>
+
+        <!-- Navigation links -->
+        <div class="p-4">
+          <h3 class="text-sm font-medium mb-2">Navegar</h3>
+          <nav class="space-y-2">
+              <a href="../" class="flex items-center gap-2 text-instagram-500 hover:text-instagram-700 py-1">
+                <i class="fa-solid fa-images w-5"></i>
+                <span>Galería principal</span>
+              </a>
+              <a href="../etiquetas/" class="flex items-center gap-2 text-instagram-500 hover:text-instagram-700 py-1">
+                <i class="fa-solid fa-tags w-5"></i>
+                <span>Etiquetas populares</span>
+              </a>
+              <a href="../elementos/" class="flex items-center gap-2 text-instagram-500 hover:text-instagram-700 py-1">
+                <i class="fa-solid fa-cubes w-5"></i>
+                <span>Elementos detectados</span>
+              </a>
+            </nav>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Overlay for sidebar -->
+  <div id="sidebarOverlay" class="fixed inset-0 bg-black/50 opacity-0 pointer-events-none transition-opacity duration-300 z-40"></div>
+
+    <!-- Main content -->
+  <main class="container mx-auto px-2 sm:px-4 py-4">
+    <!-- Stats header -->
+    <div class="mb-6 text-center">
+      <div class="flex justify-center items-center gap-4 mb-2">
+        <i class="fa-solid fa-fire text-2xl text-orange-500"></i>
+        <h2 class="text-lg font-medium text-instagram-600 dark:text-instagram-400">
+          Las fotos más populares de Valladolid
+        </h2>
+      </div>
+      <p class="text-sm text-instagram-500" id="stats-info">
+        Basado en likes y comentarios de la comunidad en Bluesky
+      </p>
+    </div>
+
+    <div class="flex justify-between items-center mb-4">
+      <div class="flex items-center gap-2">
+        <i class="fa-solid fa-trophy text-instagram-600"></i>
+        <span class="text-sm font-medium text-instagram-600 dark:text-instagram-400" id="current-filter">
+          Todo el tiempo • Más likes
+        </span>
+      </div>
+      <div class="flex border border-instagram-200 dark:border-instagram-700 rounded-md overflow-hidden">
+        <button id="gridViewBtn" class="view-toggle-active px-3 py-1.5 bg-white dark:bg-instagram-800 text-instagram-500 dark:text-instagram-400">
+          <i class="fa-solid fa-th text-lg"></i>
+        </button>
+        <button id="listViewBtn" class="px-3 py-1.5 bg-white dark:bg-instagram-800 text-instagram-500 dark:text-instagram-400">
+          <i class="fa-solid fa-list text-lg"></i>
+        </button>
+      </div>
+    </div>
+    
+    <div id="contenido" class="pb-20">
+      <div class="flex justify-center items-center py-20">
+        <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-instagram-600"></div>
+        <span class="ml-3 text-instagram-500">Cargando fotos populares...</span>
+      </div>
+    </div>
+  </main>
+
+  <!-- Floating Action Buttons -->
+  <div class="fixed bottom-6 right-6 z-40 flex flex-col gap-3">
+    <button id="shareGeneralBtn2" class="hover:bg-[#b39ddb] dark:bg-[#57316b] text-white w-10 h-10 rounded-full shadow-lg flex items-center justify-center bg-[#795DA9] dark:hover:bg-[#8C4EAD] transition-colors" title="Compartir">
+      <i class="fa-solid fa-share-nodes text-base"></i>
+    </button>
+    <a href="../" class="hover:bg-[#b39ddb] dark:bg-[#57316b] text-white w-10 h-10 rounded-full shadow-lg flex items-center justify-center bg-[#795DA9] dark:hover:bg-[#8C4EAD] transition-colors" title="Galería principal">
+      <i class="fa-solid fa-images text-base"></i>
+    </a>
+  </div>
+  
+  <!-- Footer with license notice -->  
+  <footer class="mt-auto py-4 bg-white dark:bg-instagram-800 border-t border-instagram-200 dark:border-instagram-700 text-center text-xs text-instagram-500 dark:text-instagram-400 px-4">
+    <p>Fotos con licencia 
+      <a href="https://creativecommons.org/licenses/by-sa/4.0/deed.es" target="_blank" class="underline">CC BY-SA 4.0</a> - Código <a href="https://github.com/aldeapucela/fotos" target="_blank" class="underline">AGPLv3</a>
+    </p>
+  </footer>
+
+  <!-- Lightbox for photo details -->  
+  <div id="lightbox" class="lightbox fixed inset-0 z-50 bg-black/90 flex items-center justify-center overflow-auto">
+    <div class="relative w-full max-w-4xl">
+      <!-- Close button -->  
+      <button id="lightbox-close" class="absolute -top-12 right-4 text-white bg-black/50 rounded-full w-10 h-10 flex items-center justify-center">
+        <i class="fa-solid fa-xmark text-xl"></i>
+      </button>
+      
+      <!-- Photo container -->  
+      <div class="bg-black overflow-hidden relative">
+        <div class="relative max-w-full">
+          <!-- Navigation buttons -->
+          <button id="prevPhoto" class="fixed sm:absolute left-2 top-1/2 -translate-y-1/2 bg-black/40 text-white p-3 rounded-full md:opacity-75 hover:opacity-100 focus:opacity-100 z-10 hover:bg-black/60 transition-all">
+            <i class="fa-solid fa-chevron-left text-xl"></i>
+          </button>
+          <button id="nextPhoto" class="fixed sm:absolute right-2 top-1/2 -translate-y-1/2 bg-black/40 text-white p-3 rounded-full md:opacity-75 hover:opacity-100 focus:opacity-100 z-10 hover:bg-black/60 transition-all">
+            <i class="fa-solid fa-chevron-right text-xl"></i>
+          </button>
+          
+          <!-- Image -->  
+          <div class="relative overflow-auto">
+            <img id="lightbox-img" class="lightbox-img w-full max-h-[70vh] object-contain mx-auto" src="" alt="">
+          </div>
+        </div>
+        
+        <!-- Photo info -->  
+        <div class="bg-white dark:bg-instagram-800 p-4">
+          <div class="flex justify-between items-center mb-3">
+            <div class="flex gap-3">
+              <button id="lightbox-chat-btn" type="button" class="text-instagram-500 hover:text-instagram-700 flex items-center" title="Comentarios de Bluesky">
+                <i class="fa-regular fa-comment text-xl"></i>
+                <span id="lightbox-comments-count" class="ml-1 text-base text-instagram-500" style="display:none"></span>
+              </button>
+              <button id="lightbox-share" class="text-instagram-500 hover:text-instagram-700">
+                <i class="fa-solid fa-share-nodes text-xl"></i>
+              </button>
+              <a id="lightbox-download" href="" download class="text-instagram-500 hover:text-instagram-700" title="Descargar foto">
+                <i class="fa-solid fa-download text-xl"></i>
+              </a>
+            </div>
+            <a id="lightbox-license" class="text-xs text-instagram-500 hover:text-instagram-700" href="https://creativecommons.org/licenses/by-sa/4.0/deed.es" target="_blank">CC BY-SA 4.0</a>
+          </div>
+          <div id="lightbox-desc" class="text-sm mb-3"></div>
+          <div class="flex justify-between items-center">
+            <div class="flex items-center text-sm">
+              <div id="lightbox-autor" class="flex items-center text-instagram-500">
+                <i class="fa-regular fa-user mr-2"></i>
+                <span></span>
+              </div>
+              <div id="lightbox-fecha" class="flex items-center ml-4 text-instagram-500">
+                <i class="fa-regular fa-calendar mr-2"></i>
+                <span></span>
+              </div>
+            </div>
+            <!-- Stats in lightbox -->
+            <div class="flex items-center gap-4 text-sm text-instagram-500">
+              <div id="lightbox-stats" class="flex items-center gap-3">
+                <span id="lightbox-likes" class="flex items-center gap-1">
+                  <i class="fa-regular fa-heart"></i>
+                  <span>0</span>
+                </span>
+                <span id="lightbox-comments" class="flex items-center gap-1">
+                  <i class="fa-regular fa-comment"></i>
+                  <span>0</span>
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Panel flotante de comentarios Bluesky -->
+        <div id="bluesky-comments-panel" class="fixed inset-0 z-50 flex items-end justify-center pointer-events-none">
+          <div class="relative w-full max-w-2xl pointer-events-auto transition-transform duration-300 translate-y-full opacity-0 bg-instagram-50 dark:bg-instagram-900 rounded-t-lg shadow-2xl border border-instagram-200 dark:border-instagram-700 max-h-[70vh] overflow-y-auto" id="bluesky-comments-panel-inner">
+            <button id="close-bluesky-comments" class="absolute top-2 right-2 text-instagram-500 hover:text-instagram-700 bg-white dark:bg-instagram-800 rounded-full w-8 h-8 flex items-center justify-center shadow"><i class="fa-solid fa-xmark text-lg"></i></button>
+            <div id="bluesky-comments" class="p-4"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Database Manager -->
+  <script src="../js/database-manager.js?202508101142"></script>
+  <!-- Bluesky Comments JS -->
+  <script src="../js/bluesky-comments.js?202508101142"></script>
+  <!-- Populares JS -->
+  <script src="../js/populares.js?202508101210"></script>
+  <!-- Load Matomo Analytics -->
+  <script src="../js/matomo.js"></script>
+</body>
+</html>

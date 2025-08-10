@@ -10,8 +10,14 @@ aldeapucela/fotos/
 │   ├── subir-foto.py
 │   ├── borrar-foto.py
 │   ├── feed-rss.py   # Generador del feed RSS
-│   └── update-tags.py
-│   └── update-ai-tags.py
+│   ├── update-tags.py
+│   ├── update-ai-tags.py
+│   └── bluesky-sync.py  # Sincronización con Bluesky
+├── populares/        # Vista de fotos más populares
+│   └── index.html
+├── js/               # Scripts JavaScript
+│   ├── script.js     # Galería principal
+│   └── populares.js  # Vista de populares
 ├── fotos.db          # Base de datos SQLite
 ├── fotos.db.sample   # Plantilla de la base de datos
 ├── feed.xml          # Feed RSS con las últimas 100 fotos
@@ -64,6 +70,16 @@ CREATE TABLE IF NOT EXISTS bluesky_posts (
     FOREIGN KEY(image_id) REFERENCES imagenes(id) ON DELETE CASCADE,
     UNIQUE(image_id)
 );
+
+CREATE TABLE IF NOT EXISTS bluesky_interactions_cache (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    image_id INTEGER NOT NULL UNIQUE,
+    like_count INTEGER DEFAULT 0,
+    comment_count INTEGER DEFAULT 0,
+    repost_count INTEGER DEFAULT 0,
+    last_updated DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(image_id) REFERENCES imagenes(id) ON DELETE CASCADE
+);
 ```
 
 **Tabla opcional: `image_analysis`**
@@ -91,6 +107,18 @@ Esta tabla permite asociar cada imagen de la galería con el identificador (`pos
 - `image_id`: referencia a la imagen de la tabla `imagenes`.
 - `post_id`: identificador del post en Bluesky.
 
+**Tabla opcional: `bluesky_interactions_cache`**
+
+Esta tabla almacena las métricas de interacción (likes, comentarios, reposts) de cada foto desde Bluesky. Se utiliza para la funcionalidad de **fotos populares** y permite ordenar las imágenes por su nivel de engagement en la red social.
+
+- `image_id`: referencia a la imagen de la tabla `imagenes`.
+- `like_count`: número de likes recibidos en Bluesky.
+- `comment_count`: número de comentarios recibidos.
+- `repost_count`: número de reposts/shares.
+- `last_updated`: fecha de la última actualización de estos datos.
+
+Esta tabla se actualiza automáticamente mediante el script `bluesky-sync.py`.
+
 ## Scripts de mantenimiento
 
 ### Feed RSS
@@ -101,6 +129,15 @@ Esta tabla permite asociar cada imagen de la galería con el identificador (`pos
 - Incluye descripciones, autores y enlaces directos
 - Indica la licencia CC BY-SA 4.0 de las imágenes
 - Se recomienda ejecutar cada 5 minutos en un cron
+
+### Sincronización con Bluesky
+```bash
+./scripts/bluesky-sync.py
+```
+- Obtiene métricas de interacción (likes, comentarios, reposts) desde Bluesky
+- Actualiza la tabla `bluesky_interactions_cache`
+- Necesario para la funcionalidad de fotos populares
+- Se recomienda ejecutar cada 30 minutos en un cron
 
 ### Borrar fotos
 ```bash
@@ -128,6 +165,27 @@ python3 ./scripts/update-ai-tags.py
 - Necesario ejecutar después de añadir nuevas fotos o actualizar análisis de IA
 
 Recomendable ejecutar ambos scripts al menos cada hora en un cron.
+
+## Funcionalidad de fotos populares
+
+La galería incluye una vista especial en `/populares/` que muestra las fotos ordenadas por su popularidad basada en las métricas de Bluesky (likes, comentarios, reposts).
+
+### Características:
+
+- **Filtros por período**: Todo el tiempo, último año, últimos 6 meses, último mes, última semana
+- **Ordenación**: Por likes, comentarios o engagement total (combinado)
+- **URLs compartibles**: Los filtros se reflejan en la URL para compartir vistas específicas
+  - `/populares/` - Vista por defecto
+  - `/populares/?period=month&sort=comments` - Último mes por comentarios
+  - `/populares/?period=week&sort=engagement` - Última semana por engagement
+- **Rankings visuales**: Las primeras 10 fotos muestran badges de posición
+- **Navegación**: Clic en cualquier foto redirige a la galería principal
+
+### Requisitos:
+
+1. Tabla `bluesky_posts` configurada con los post IDs
+2. Tabla `bluesky_interactions_cache` con métricas actualizadas
+3. Script `bluesky-sync.py` ejecutándose periódicamente
 
 ## Cache de etiquetas
 
