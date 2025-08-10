@@ -359,7 +359,7 @@ function openLightbox(imgSrc, data) {
         likesEl.target = '_blank';
         likesEl.rel = 'noopener noreferrer';
         likesEl.style.display = '';
-        likesEl.innerHTML = `<i class="fa-regular fa-heart"></i> <span class="text-base">${likeCount}</span>`;
+        likesEl.innerHTML = `<i class="fa-regular fa-heart"></i> <span class="text-base">${DOMPurify.sanitize(String(likeCount))}</span>`;
       } else {
         likesEl.removeAttribute('href');
         likesEl.innerHTML = `<i class="fa-regular fa-heart"></i> <span class="text-base">0</span>`;
@@ -825,12 +825,16 @@ initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1
                       if (actions) {
                         let html = '';
                         if (likeCount > 0) {
-                          html += `<a href="${threadUrl || '#'}" target="_blank" rel="noopener noreferrer" class="text-instagram-500 hover:text-instagram-700 flex items-center" title="Me gusta en Bluesky"><i class="fa-regular fa-heart mr-1"></i><span>${likeCount}</span></a>`;
+                          const safeUrl = DOMPurify.sanitize(threadUrl || '#');
+                          const safeLikeCount = DOMPurify.sanitize(String(likeCount));
+                          html += `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer" class="text-instagram-500 hover:text-instagram-700 flex items-center" title="Me gusta en Bluesky"><i class="fa-regular fa-heart mr-1"></i><span>${safeLikeCount}</span></a>`;
                         }
                         if (commentCount > 0) {
-                          html += `<button type="button" class="open-comments-btn ml-3 text-instagram-500 hover:text-instagram-700 flex items-center" title="Ver comentarios" data-photo-id="${telegramId}"><i class="fa-regular fa-comment"></i><span class="ml-1">${commentCount}</span></button>`;
+                          const safeTelegramId = DOMPurify.sanitize(telegramId);
+                          const safeCommentCount = DOMPurify.sanitize(String(commentCount));
+                          html += `<button type="button" class="open-comments-btn ml-3 text-instagram-500 hover:text-instagram-700 flex items-center" title="Ver comentarios" data-photo-id="${safeTelegramId}"><i class="fa-regular fa-comment"></i><span class="ml-1">${safeCommentCount}</span></button>`;
                         }
-                        actions.innerHTML = html;
+                        actions.innerHTML = DOMPurify.sanitize(html);
 
                         // Añadir event listener para el botón de comentarios
                         const commentsBtn = actions.querySelector('.open-comments-btn');
@@ -918,10 +922,19 @@ initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1
             photoToOpen = { path: fullPath, data };
           }
 
+          // Escapar todos los datos de usuario para prevenir XSS
+          const safeFullPath = DOMPurify.sanitize(fullPath);
+          const safeAiDescription = DOMPurify.sanitize(data.ai_description || data.description || '');
+          const safeTelegramUrl = DOMPurify.sanitize(telegramUrl);
+          const safeAuthor = DOMPurify.sanitize(data.author || 'Anónimo');
+          const safeDate = DOMPurify.sanitize(data.date || '');
+          const safeTelegramId = DOMPurify.sanitize(telegramId);
+          const safeDescription = data.description ? DOMPurify.sanitize(data.description) : '';
+          
           // Create photo card HTML
           const photoCardHtml = isAppropriate ? `
             <div class="photo-card-image relative pb-[100%] bg-instagram-100 dark:bg-instagram-700">
-              <img loading="lazy" data-src="${fullPath}" alt="${data.ai_description || data.description || ''}" 
+              <img loading="lazy" data-src="${safeFullPath}" alt="${safeAiDescription}" 
                    class="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-300">
             </div>
           ` : `
@@ -933,48 +946,51 @@ initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1
             </div>
           `;
 
-          item.innerHTML = `
+          const dateFormatted = window.innerWidth <= 640 
+            ? new Date(safeDate).toLocaleString('es', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+              })
+            : new Date(safeDate).toLocaleTimeString('es', {
+                hour: '2-digit',
+                minute: '2-digit'
+              });
+
+          const fullCardHtml = `
             ${photoCardHtml}
             <div class="photo-details p-3">
               <div class="flex items-center justify-between mb-2">
                 <div class="font-medium text-sm flex items-center">
                   <i class="fa-regular fa-user text-instagram-400 mr-2"></i>
-                  <a href="${telegramUrl}" target="_blank" rel="noopener noreferrer" class="hover:text-instagram-700">${data.author}</a>
+                  <a href="${safeTelegramUrl}" target="_blank" rel="noopener noreferrer" class="hover:text-instagram-700">${safeAuthor}</a>
                 </div>
-                <div class="text-xs text-instagram-500" data-original-date="${data.date}">
+                <div class="text-xs text-instagram-500" data-original-date="${safeDate}">
                   <i class="fa-regular fa-clock mr-1"></i>
-                  ${window.innerWidth <= 640 
-                    ? new Date(data.date).toLocaleString('es', {
-                        day: '2-digit',
-                        month: '2-digit',
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })
-                    : new Date(data.date).toLocaleTimeString('es', {
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })
-                  }
+                  ${dateFormatted}
                 </div>
               </div>
-              ${data.description ? `<p class="text-sm text-instagram-500 line-clamp-2">${DOMPurify.sanitize(convertHashtagsToLinks(data.description, false))}</p>` : ''} 
+              ${safeDescription ? `<p class="text-sm text-instagram-500 line-clamp-2">${DOMPurify.sanitize(convertHashtagsToLinks(safeDescription, false))}</p>` : ''} 
               <div class="mt-2 flex flex-wrap sm:flex-nowrap gap-2 items-center justify-between text-instagram-400 text-lg">
-                <div class="actions flex items-center" data-photo-id="${telegramId}">
+                <div class="actions flex items-center" data-photo-id="${safeTelegramId}">
                   <span class="bluesky-icons flex items-center"></span>
                   <button type="button" class="share-button hover:text-instagram-600 ml-3" 
-                          data-telegram-id="${telegramId}" data-description="${encodeURIComponent(data.description || '')}" 
+                          data-telegram-id="${safeTelegramId}" data-description="${encodeURIComponent(safeDescription)}" 
                           title="Compartir">
                     <i class="fa-solid fa-share-nodes"></i>
                   </button>
                   ${isAppropriate ? `
-                    <a href="${fullPath}" download class="text-instagram-500 hover:text-instagram-700 ml-3" title="Descargar foto">
+                    <a href="${safeFullPath}" download class="text-instagram-500 hover:text-instagram-700 ml-3" title="Descargar foto">
                       <i class="fa-solid fa-download"></i>
                     </a>
                   ` : ''}
                 </div>
                 <a class="text-xs text-instagram-400 hover:text-instagram-700 shrink-0" href="https://creativecommons.org/licenses/by-sa/4.0/deed.es" target="_blank" rel="noopener noreferrer">CC BY-SA 4.0</a>
               </div>`;
+          
+          item.innerHTML = DOMPurify.sanitize(fullCardHtml);
 
           // If image is inappropriate, mark it
           if (!isAppropriate) {

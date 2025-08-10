@@ -158,20 +158,30 @@ async function loadBlueskyComments(photoUrl, returnCountOnly = false) {
       const author = reply.post.author;
       const li = document.createElement("li");
       li.className = "mb-4 p-3 bg-white dark:bg-instagram-800 rounded shadow-sm";
+      // Escapar todos los datos del usuario para prevenir XSS
+      const safeAvatar = encodeURI(author.avatar || '');
+      const safeDid = encodeURIComponent(author.did);
+      const safeDisplayName = document.createElement('span');
+      safeDisplayName.textContent = author.displayName || author.handle;
+      const safeText = document.createElement('p');
+      safeText.className = "text-instagram-500 text-sm mb-2";
+      safeText.textContent = reply.post.record.text;
+      const safePostId = encodeURIComponent(reply.post.uri.split("/").pop());
+      
       li.innerHTML = `
         <div class="flex items-center gap-3 mb-2">
-          <img src="${author.avatar || ''}" alt="avatar" class="w-7 h-7 rounded-full border border-instagram-200 dark:border-instagram-700 bg-white object-cover" loading="lazy" />
+          <img src="${safeAvatar}" alt="avatar" class="w-7 h-7 rounded-full border border-instagram-200 dark:border-instagram-700 bg-white object-cover" loading="lazy" />
           <div>
-            <a href="https://bsky.app/profile/${author.did}" target="_blank" class="font-bold text-instagram-600 hover:text-instagram-700 text-sm">${author.displayName || author.handle}</a>
+            <a href="https://bsky.app/profile/${safeDid}" target="_blank" class="font-bold text-instagram-600 hover:text-instagram-700 text-sm">${safeDisplayName.innerHTML}</a>
             <span class="ml-2 text-xs text-instagram-400">${timeAgo(reply.post.record.createdAt)}</span>
           </div>
         </div>
-        <p class="text-instagram-500 text-sm mb-2">${reply.post.record.text}</p>
+        ${safeText.outerHTML}
         <div class="flex gap-2 text-xs text-instagram-400">
-          <span><i class="fa-regular fa-comment"></i> ${reply.post.replyCount || 0}</span>
-          <span><i class="fa-solid fa-retweet"></i> ${reply.post.repostCount || 0}</span>
-          <span><i class="fa-regular fa-heart"></i> ${reply.post.likeCount || 0}</span>
-          <a href="https://bsky.app/profile/${author.did}/post/${reply.post.uri.split("/").pop()}" target="_blank" class="ml-auto text-instagram-500 hover:text-instagram-700"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+          <span><i class="fa-regular fa-comment"></i> ${parseInt(reply.post.replyCount) || 0}</span>
+          <span><i class="fa-solid fa-retweet"></i> ${parseInt(reply.post.repostCount) || 0}</span>
+          <span><i class="fa-regular fa-heart"></i> ${parseInt(reply.post.likeCount) || 0}</span>
+          <a href="https://bsky.app/profile/${safeDid}/post/${safePostId}" target="_blank" class="ml-auto text-instagram-500 hover:text-instagram-700"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>
         </div>
       `;
       commentsList.appendChild(li);
