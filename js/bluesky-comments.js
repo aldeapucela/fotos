@@ -21,38 +21,33 @@ function timeAgo(date) {
 
 
 window.getBlueskyThreadStats = async function(photoUrl) {
-  // Use the same logic as loadBlueskyComments to get the post_id from the DB
+  // Use DatabaseManager para evitar descargas múltiples
   let imagePath = null;
   let canonicalUrl = photoUrl || window.location.href;
   if (canonicalUrl.startsWith('http')) {
     const hash = canonicalUrl.split('#')[1];
     if (hash) {
-      imagePath = hash + '.jpg';
+      imagePath = hash; // Solo el ID, sin asumir extensión
     } else {
       imagePath = canonicalUrl.split('/').pop();
     }
   } else {
     imagePath = canonicalUrl;
   }
+  
   try {
-    if (!window.initSqlJs) {
-      throw new Error('sql.js not loaded');
+    // Verificar que DatabaseManager esté disponible
+    if (!window.databaseManager) {
+      throw new Error('DatabaseManager no está cargado');
     }
-    const SQL = await window.initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.13.0/${file}` });
-    const response = await fetch('/fotos.db');
-    const buffer = await response.arrayBuffer();
-    const db = new SQL.Database(new Uint8Array(buffer));
-    const stmt = db.prepare("SELECT post_id FROM bluesky_posts JOIN imagenes ON bluesky_posts.image_id = imagenes.id WHERE imagenes.path = ?");
-    stmt.bind([imagePath]);
-    let postId = null;
-    if (stmt.step()) {
-      postId = stmt.getAsObject().post_id;
-    }
-    stmt.free();
-    db.close();
+    
+    // Usar el DatabaseManager para obtener el post_id
+    const postId = await window.databaseManager.getBlueskyPostId(imagePath);
+    
     if (!postId) {
       return { likeCount: 0, threadUrl: null };
     }
+    
     const threadUrl = `https://bsky.app/profile/${BLUESKY_THREAD_HANDLE}/post/${postId}`;
     const threadApiUrl = `https://public.api.bsky.app/xrpc/app.bsky.feed.getPostThread?uri=at://${BLUESKY_THREAD_HANDLE}/app.bsky.feed.post/${postId}`;
     const threadResponse = await fetch(threadApiUrl, { headers: { Accept: "application/json" } });
@@ -63,6 +58,7 @@ window.getBlueskyThreadStats = async function(photoUrl) {
     }
     return { likeCount, threadUrl };
   } catch (error) {
+    console.error('Error en getBlueskyThreadStats:', error);
     return { likeCount: 0, threadUrl: null };
   }
 }
@@ -76,7 +72,7 @@ async function loadBlueskyComments(photoUrl, returnCountOnly = false) {
   if (canonicalUrl.startsWith('http')) {
     const hash = canonicalUrl.split('#')[1];
     if (hash) {
-      imagePath = hash + '.jpg'; // Assumes .jpg, adjust if needed
+      imagePath = hash; // Solo el ID, sin asumir extensión
     } else {
       // fallback: try to extract last path segment
       imagePath = canonicalUrl.split('/').pop();
@@ -86,23 +82,14 @@ async function loadBlueskyComments(photoUrl, returnCountOnly = false) {
   }
   const commentsDiv = document.getElementById("bluesky-comments");
   try {
-    // Load the SQLite DB with sql.js
-    if (!window.initSqlJs) {
-      throw new Error('sql.js not loaded');
+    // Verificar que DatabaseManager esté disponible
+    if (!window.databaseManager) {
+      throw new Error('DatabaseManager no está cargado');
     }
-    const SQL = await window.initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.13.0/${file}` });
-    const response = await fetch('/fotos.db');
-    const buffer = await response.arrayBuffer();
-    const db = new SQL.Database(new Uint8Array(buffer));
-    // Query for the post_id
-    const stmt = db.prepare("SELECT post_id FROM bluesky_posts JOIN imagenes ON bluesky_posts.image_id = imagenes.id WHERE imagenes.path = ?");
-    stmt.bind([imagePath]);
-    let postId = null;
-    if (stmt.step()) {
-      postId = stmt.getAsObject().post_id;
-    }
-    stmt.free();
-    db.close();
+    
+    // Usar el DatabaseManager para obtener el post_id (reutiliza la BD ya cargada)
+    const postId = await window.databaseManager.getBlueskyPostId(imagePath);
+    
     if (!postId) {
       // No post_id found, show default message
       if (commentsDiv) {

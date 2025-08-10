@@ -635,12 +635,14 @@ if (searchParam) {
   }, 500);
 }
 
-// Initialize SQL.js and load the database
-initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.13.0/${file}` }).then(async SQL => {
+// Initialize database using DatabaseManager
+(async () => {
   try {
-    const response = await fetch('/fotos.db');
-    const buffer = await response.arrayBuffer();
-    const db = new SQL.Database(new Uint8Array(buffer));
+    // Verificar que DatabaseManager esté disponible
+    if (!window.databaseManager) {
+      console.error('DatabaseManager no está cargado. Asegúrate de incluir database-manager.js antes de script.js');
+      return;
+    }
     
     // Load tags from cache
     const tagsResponse = await fetch('/tags-cache.json');
@@ -662,16 +664,8 @@ initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1
       });
     }
 
-    // Continue with existing query for photos
-    const res = db.exec(`
-      SELECT i.*, date(i.date) as fecha_grupo, 
-             ia.is_appropriate, 
-             ia.description as ai_description,
-             ia.tags as ai_tags 
-      FROM imagenes i 
-      LEFT JOIN image_analysis ia ON i.id = ia.image_id 
-      ORDER BY i.date DESC
-    `);
+    // Continue with existing query for photos usando DatabaseManager
+    const res = await window.databaseManager.getPhotosData();
     
     const contenido = document.getElementById('contenido');
     if (contenido) contenido.innerHTML = '';
@@ -1046,7 +1040,7 @@ initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1
     console.error('Error al cargar la galería:', error);
     safeSetContenido('<div class=\"text-center py-20 text-instagram-500\">Error al cargar la galería</div>');
   }
-});
+})();
 
 // Handle lightbox gestures
 ifLightbox(() => {
