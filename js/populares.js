@@ -58,12 +58,24 @@ function formatDate(dateString) {
   });
 }
 
-function convertHashtagsToLinks(text, isLightbox = false) {
+function convertDescriptionToLinks(text, isLightbox = false) {
   if (!text) return '';
   const linkClass = isLightbox ? 'tag-link-lightbox' : 'tag-link';
-  return text.replace(/#([a-záéíóúüñA-ZÁÉÍÓÚÜÑ0-9_]+)/gi, (match, tag) => {
+  const linkColor = 'text-instagram-600 hover:text-instagram-800 underline';
+  return text.replace(/https?:\/\/[^\s<>()]+|#([a-záéíóúüñA-ZÁÉÍÓÚÜÑ0-9_]+)/gi, (match, tag) => {
+    if (/^https?:\/\//i.test(match)) {
+      const trailingPunctuation = match.match(/[.,!?;:]+$/)?.[0] || '';
+      const url = trailingPunctuation ? match.slice(0, -trailingPunctuation.length) : match;
+      const safeUrl = DOMPurify.sanitize(url, { ALLOWED_URI_REGEXP: /^(?:(?:https?):\/\/)/i });
+      return `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer" class="${linkColor}">foto original</a>${trailingPunctuation}`;
+    }
+
     return `<a href="../?tag=${encodeURIComponent(tag)}" class="${linkClass} text-instagram-600 hover:text-instagram-800 underline" data-tag="${tag}">${match}</a>`;
   });
+}
+
+function convertHashtagsToLinks(text, isLightbox = false) {
+  return convertDescriptionToLinks(text, isLightbox);
 }
 
 /**
@@ -361,7 +373,7 @@ function createPhotoCard(photo, index) {
     <!-- Photo info -->
     <div class="p-3">
       <div class="text-sm font-medium mb-1 line-clamp-2">
-        ${DOMPurify.sanitize(photo.description ? convertHashtagsToLinks(photo.description.split('\n')[0]) : 'Sin descripción')}
+        ${DOMPurify.sanitize(photo.description ? convertHashtagsToLinks(photo.description.split('\n')[0]) : 'Sin descripción', { ADD_ATTR: ['data-tag', 'target', 'rel'] })}
       </div>
       <div class="text-xs text-instagram-500">
         Por ${DOMPurify.sanitize(photo.author || 'Desconocido')}

@@ -201,19 +201,36 @@ function clearSearch() {
   document.getElementById('searchInput').value = '';
 }
 
-// Convert hashtags to links
-function convertHashtagsToLinks(text, isLightbox = false) {
+// Convert description URLs and hashtags to links
+function convertDescriptionToLinks(text, isLightbox = false) {
   if (!text) return '';
-  return text.replace(/#([áéíóúüñÁÉÍÓÚÜÑa-zA-Z0-9_]+)/g, (match, tag) => {
+
+  const tagClass = isLightbox ? 'tag-link-lightbox' : 'tag-link';
+  const tagColor = 'text-instagram-600 dark:text-instagram-400 hover:underline';
+  const urlClass = 'text-instagram-600 dark:text-instagram-400 hover:underline';
+
+  return text.replace(/https?:\/\/[^\s<>()]+|#([áéíóúüñÁÉÍÓÚÜÑa-zA-Z0-9_]+)/g, (match, tag) => {
+    if (/^https?:\/\//i.test(match)) {
+      // Keep punctuation outside the href while preserving it in the description.
+      const trailingPunctuation = match.match(/[.,!?;:]+$/)?.[0] || '';
+      const url = trailingPunctuation ? match.slice(0, -trailingPunctuation.length) : match;
+      const safeUrl = DOMPurify.sanitize(url, { ALLOWED_URI_REGEXP: /^(?:(?:https?):\/\/)/i });
+      return `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer" class="${urlClass}">foto original</a>${trailingPunctuation}`;
+    }
+
     const normalizedTag = tag.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
     if (isLightbox) {
       // For lightbox, add data-tag and class, remove onclick
-      return `<a href="?tag=${normalizedTag}" class="tag-link-lightbox text-instagram-600 dark:text-instagram-400 hover:underline" data-tag="${normalizedTag}">${match}</a>`;
+      return `<a href="?tag=${normalizedTag}" class="${tagClass} ${tagColor}" data-tag="${normalizedTag}">${match}</a>`;
     } else {
       // For main page grid/list view, keep onclick
-      return `<a href="?tag=${normalizedTag}" class="tag-link text-instagram-600 dark:text-instagram-400 hover:underline" data-tag="${normalizedTag}">${match}</a>`;
+      return `<a href="?tag=${normalizedTag}" class="${tagClass} ${tagColor}" data-tag="${normalizedTag}">${match}</a>`;
     }
   });
+}
+
+function convertHashtagsToLinks(text, isLightbox = false) {
+  return convertDescriptionToLinks(text, isLightbox);
 }
 
 // Filter photos by tag
@@ -526,7 +543,7 @@ function openLightbox(imgSrc, data) {
 
   // Sanitize the description HTML before inserting it (pass true for isLightbox)
   const descriptionHtml = data.description ? convertHashtagsToLinks(data.description, true) : '';
-  lightboxDesc.innerHTML = DOMPurify.sanitize(descriptionHtml, { ADD_ATTR: ['data-tag'] }); // Allow data-tag attribute
+  lightboxDesc.innerHTML = DOMPurify.sanitize(descriptionHtml, { ADD_ATTR: ['data-tag', 'target', 'rel'] }); // Allow link attributes
 
   // Add delegated event listener for tag links within the lightbox description
   lightboxDesc.addEventListener('click', (e) => {
@@ -1079,7 +1096,7 @@ if (searchParam) {
                   ${dateFormatted}
                 </div>
               </div>
-              ${safeDescription ? `<p class="text-sm text-instagram-500 line-clamp-2">${DOMPurify.sanitize(convertHashtagsToLinks(safeDescription, false))}</p>` : ''} 
+              ${safeDescription ? `<p class="text-sm text-instagram-500 line-clamp-2">${DOMPurify.sanitize(convertHashtagsToLinks(safeDescription, false), { ADD_ATTR: ['data-tag', 'target', 'rel'] })}</p>` : ''}
               <div class="mt-2 flex flex-wrap sm:flex-nowrap gap-2 items-center justify-between text-instagram-400 text-lg">
                 <div class="actions flex items-center" data-photo-id="${safeTelegramId}">
                   <span class="bluesky-icons flex items-center"></span>
@@ -1097,7 +1114,7 @@ if (searchParam) {
                 <a class="text-xs text-instagram-400 hover:text-instagram-700 shrink-0" href="https://creativecommons.org/licenses/by-sa/4.0/deed.es" target="_blank" rel="noopener noreferrer">CC BY-SA 4.0</a>
               </div>`;
           
-          item.innerHTML = DOMPurify.sanitize(fullCardHtml);
+          item.innerHTML = DOMPurify.sanitize(fullCardHtml, { ADD_ATTR: ['data-tag', 'target', 'rel'] });
 
           // If image is inappropriate, mark it
           if (!isAppropriate) {
