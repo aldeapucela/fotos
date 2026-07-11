@@ -20,7 +20,8 @@ aldeapucela/fotos/
 │   └── populares.js  # Vista de populares
 ├── fotos.db          # Base de datos SQLite
 ├── fotos.db.sample   # Plantilla de la base de datos
-├── feed.xml          # Feed RSS con las últimas 100 fotos
+├── feed.xml          # Feed RSS con las últimas 100 fotos aptas
+├── data.json         # API JSON con todas las fotos aptas
 ├── tags-cache.json   # Caché de etiquetas
 ├── ai-tags-cache.json # Caché de etiquetas generadas por IA
 ├── index.html        # Galería principal
@@ -125,7 +126,8 @@ Esta tabla se actualiza automáticamente mediante el script `bluesky-sync.py`.
 ```bash
 ./scripts/feed-rss.py
 ```
-- Genera un feed RSS con las últimas 100 fotos
+- Genera un feed RSS con las últimas 100 fotos aptas
+- Genera `data.json` con todas las fotos aptas y los mismos campos que cada elemento RSS
 - Incluye descripciones, autores y enlaces directos
 - Indica la licencia CC BY-SA 4.0 de las imágenes
 - Se recomienda ejecutar cada 5 minutos en un cron

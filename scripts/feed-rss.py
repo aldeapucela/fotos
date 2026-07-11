@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import sqlite3
 import os
+import json
 from datetime import datetime
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
@@ -50,7 +51,8 @@ def generate_rss():
         lastBuildDate = ET.SubElement(channel, 'lastBuildDate')
         lastBuildDate.text = datetime.now().strftime('%a, %d %b %Y %H:%M:%S +0200')
         
-        # Connect to database and get latest 100 photos
+        # Connect to database and get all photos. RSS is limited below, while
+        # the JSON feed exposes the complete result set.
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
         cursor.execute("""
@@ -59,18 +61,29 @@ def generate_rss():
             LEFT JOIN image_analysis ia ON ia.image_id = i.id
             WHERE i.description IS NOT NULL 
             AND (ia.is_appropriate = 1 OR ia.is_appropriate IS NULL)
-            ORDER BY i.date DESC LIMIT 100
+            ORDER BY i.date DESC
         """)
         photos = cursor.fetchall()
-        
-        # Add items to feed
-        for photo in photos:
+
+        channel_data = {
+            'title': title.text,
+            'link': link.text,
+            'description': desc.text,
+            'copyright': rights.text,
+            'creativeCommons:license': {
+                '_': license.text,
+                'xmlns:creativeCommons': 'http://backend.userland.com/creativeCommonsRssModule'
+            },
+            'language': language.text,
+            'lastBuildDate': lastBuildDate.text,
+            'item': []
+        }
+
+        # Build all items for the JSON API and only the latest 100 for RSS.
+        for index, photo in enumerate(photos):
             path, date, author, description = photo
-            
-            item = ET.SubElement(channel, 'item')
-            
+
             # Item title - use first line of description or filename
-            item_title = ET.SubElement(item, 'title')
             if description:
                 # Use first line or first 60 chars of description
                 title_text = description.split('\n')[0][:60]
@@ -78,14 +91,10 @@ def generate_rss():
                     title_text += '...'
             else:
                 title_text = os.path.basename(path)
-            item_title.text = title_text
-            
-            # Item link - direct link to photo
-            item_link = ET.SubElement(item, 'link')
-            item_link.text = f'https://fotos.aldeapucela.org/#{path.replace(".jpg", "")}'
-            
+
+            item_link = f'https://fotos.aldeapucela.org/#{path.replace(".jpg", "")}'
+
             # Item description
-            item_desc = ET.SubElement(item, 'description')
             html_desc = f'<img src="https://fotos.aldeapucela.org/files/{path}" style="max-width:600px;height:auto;"/>'
             if description:
                 html_desc += f'<p>{description}</p>'
@@ -93,16 +102,26 @@ def generate_rss():
                 image_id = path.replace('.jpg', '')
                 html_desc += f'<p>Autor/a: {author} - CC BY-SA 4.0</p>'
                 html_desc += f'<p><a href="https://t.me/AldeaPucela/27202/{image_id}">Ver original</a></p>'
-            item_desc.text = html_desc
-            
+
             # Publication date - Convert ISO 8601 to RFC 822
-            pub_date = ET.SubElement(item, 'pubDate')
-            pub_date.text = iso8601_to_rfc822(date)
-            
-            # Unique ID
-            guid = ET.SubElement(item, 'guid')
-            guid.text = f'https://fotos.aldeapucela.org/files/{path}'
-            
+            pub_date = iso8601_to_rfc822(date)
+            guid = f'https://fotos.aldeapucela.org/files/{path}'
+
+            item_data = {
+                'title': title_text,
+                'link': item_link,
+                'description': html_desc,
+                'pubDate': pub_date,
+                'guid': guid
+            }
+            channel_data['item'].append(item_data)
+
+            if index < 100:
+                item = ET.SubElement(channel, 'item')
+                for field, value in item_data.items():
+                    element = ET.SubElement(item, field)
+                    element.text = value
+
         # Generate pretty-printed XML
         xmlstr = minidom.parseString(ET.tostring(rss)).toprettyxml(indent="  ")
         
@@ -110,8 +129,17 @@ def generate_rss():
         output_path = os.path.join(project_root, 'feed.xml')
         with open(output_path, 'w', encoding='utf-8') as f:
             f.write(xmlstr)
-            
+
+        json_output_path = os.path.join(project_root, 'data.json')
+        with open(json_output_path, 'w', encoding='utf-8') as f:
+            json.dump([{'rss': {
+                'version': '2.0',
+                'channel': channel_data
+            }}], f, ensure_ascii=False, indent=2)
+            f.write('\n')
+
         print(f"RSS feed generado correctamente en {output_path}")
+        print(f"JSON feed generado correctamente en {json_output_path}")
         conn.close()
         
     except Exception as e:
