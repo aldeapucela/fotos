@@ -3,6 +3,7 @@ files/*.jpg
 tags-cache.json
 ai-tags-cache.json
 feed.xml
+data.json
 f/
 sitemap.xml
 __pycache__/
