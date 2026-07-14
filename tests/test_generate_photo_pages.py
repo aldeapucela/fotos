@@ -1,7 +1,9 @@
 import importlib.util
 import re
+import shutil
 import sqlite3
 import stat
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -64,6 +66,60 @@ class StaticPhotoPagesTest(unittest.TestCase):
     def test_generated_directory_is_web_server_traversable(self):
         mode = stat.S_IMODE((PROJECT_ROOT / "f").stat().st_mode)
         self.assertEqual(mode, 0o755)
+
+    def test_incremental_build_only_updates_changed_photos(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "index.html").write_text(
+                "<html><head>\n<!-- SOCIAL_META_START -->\n"
+                "<title>Plantilla</title>\n<!-- SOCIAL_META_END -->\n"
+                "</head><body></body></html>",
+                encoding="utf-8",
+            )
+            (root / "files").mkdir()
+            shutil.copyfile(PROJECT_ROOT / "files" / "184500.jpg", root / "files" / "1.jpg")
+            shutil.copyfile(PROJECT_ROOT / "files" / "184440.jpg", root / "files" / "2.jpg")
+
+            with sqlite3.connect(root / "fotos.db") as connection:
+                connection.executescript(
+                    """
+                    CREATE TABLE imagenes (
+                        id INTEGER PRIMARY KEY, path TEXT, date TEXT,
+                        author TEXT, description TEXT
+                    );
+                    CREATE TABLE image_analysis (
+                        image_id INTEGER, is_appropriate INTEGER
+                    );
+                    INSERT INTO imagenes VALUES
+                        (1, '1.jpg', '2026-07-14T10:00:00+02:00', 'Ana', 'Primera foto');
+                    """
+                )
+
+            MODULE.generate_photo_pages(root)
+            first_page = root / "f" / "1" / "index.html"
+            first_mtime = first_page.stat().st_mtime_ns
+
+            with sqlite3.connect(root / "fotos.db") as connection:
+                connection.execute(
+                    "INSERT INTO imagenes VALUES (?, ?, ?, ?, ?)",
+                    (2, "2.jpg", "2026-07-14T11:00:00+02:00", "Luis", "Segunda foto"),
+                )
+
+            MODULE.generate_photo_pages(root)
+            self.assertEqual(first_mtime, first_page.stat().st_mtime_ns)
+            second_page = root / "f" / "2" / "index.html"
+            self.assertTrue(second_page.is_file())
+
+            with sqlite3.connect(root / "fotos.db") as connection:
+                connection.execute(
+                    "UPDATE imagenes SET description = ? WHERE id = 2",
+                    ("Segunda foto modificada",),
+                )
+                connection.execute("DELETE FROM imagenes WHERE id = 1")
+
+            MODULE.generate_photo_pages(root)
+            self.assertIn("Segunda foto modificada", second_page.read_text(encoding="utf-8"))
+            self.assertFalse(first_page.parent.exists())
 
 
 if __name__ == "__main__":

@@ -132,6 +132,8 @@ Esta tabla se actualiza automáticamente mediante el script `bluesky-sync.py`.
 - Genera un feed RSS con las últimas 100 fotos aptas
 - Genera `data.json` con todas las fotos aptas y los mismos campos que cada elemento RSS
 - Genera una página estática `/f/{id}/` para cada foto pública y actualiza `sitemap.xml`
+- En ejecuciones sin cambios no reescribe ningún archivo; solo regenera fotos nuevas o modificadas y elimina las retiradas
+- Usa un bloqueo no bloqueante para evitar que dos ejecuciones del cron se solapen
 - Incluye descripciones, autores y enlaces directos
 - Indica la licencia CC BY-SA 4.0 de las imágenes
 - Se recomienda ejecutar cada 5 minutos en un cron

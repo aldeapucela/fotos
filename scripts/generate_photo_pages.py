@@ -4,12 +4,13 @@
 from __future__ import annotations
 
 import html
+import hashlib
+import json
 import os
 import re
 import shutil
 import sqlite3
 import struct
-import tempfile
 from pathlib import Path
 from urllib.parse import quote
 from xml.etree import ElementTree as ET
@@ -23,6 +24,7 @@ META_BLOCK_RE = re.compile(
 SAFE_ID_RE = re.compile(r"^[A-Za-z0-9_-]+$")
 URL_RE = re.compile(r"https?://[^\s<>()]+", re.IGNORECASE)
 PARENTHESIZED_URL_RE = re.compile(r"[ \t]*\([ \t]*https?://[^\s<>()]+[ \t]*\)", re.IGNORECASE)
+MANIFEST_NAME = ".photo-pages-manifest.json"
 
 
 def photo_id_from_path(image_path: str) -> str:
@@ -159,7 +161,23 @@ def public_photos(db_path: Path) -> list[sqlite3.Row]:
         connection.close()
 
 
-def write_sitemap(project_root: Path, photos: list[sqlite3.Row]) -> None:
+def write_text_if_changed(path: Path, content: str, mode: int = 0o644) -> bool:
+    """Atomically write text only when its bytes differ from the existing file."""
+    try:
+        if path.read_text(encoding="utf-8") == content:
+            return False
+    except FileNotFoundError:
+        pass
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_name(f".{path.name}.tmp")
+    temporary.write_text(content, encoding="utf-8")
+    temporary.chmod(mode)
+    temporary.replace(path)
+    return True
+
+
+def write_sitemap(project_root: Path, photos: list[sqlite3.Row]) -> bool:
     namespace = "http://www.sitemaps.org/schemas/sitemap/0.9"
     ET.register_namespace("", namespace)
     urlset = ET.Element(f"{{{namespace}}}urlset")
@@ -174,9 +192,40 @@ def write_sitemap(project_root: Path, photos: list[sqlite3.Row]) -> None:
             ET.SubElement(url, f"{{{namespace}}}lastmod").text = str(photo["date"])[:10]
     tree = ET.ElementTree(urlset)
     ET.indent(tree, space="  ")
-    temporary = project_root / ".sitemap.xml.tmp"
-    tree.write(temporary, encoding="utf-8", xml_declaration=True)
-    temporary.replace(project_root / "sitemap.xml")
+    content = ET.tostring(urlset, encoding="unicode", xml_declaration=True)
+    return write_text_if_changed(project_root / "sitemap.xml", content)
+
+
+def load_manifest(path: Path) -> dict[str, str]:
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        pages = data.get("pages", {})
+        return pages if isinstance(pages, dict) else {}
+    except (FileNotFoundError, json.JSONDecodeError, OSError):
+        return {}
+
+
+def photo_signature(
+    photo: sqlite3.Row,
+    build_signature: str,
+    image_path: Path,
+) -> str:
+    try:
+        image_stat = image_path.stat()
+        image_state = [image_stat.st_size, image_stat.st_mtime_ns]
+    except FileNotFoundError:
+        image_state = [None, None]
+
+    payload = {
+        "build": build_signature,
+        "path": photo["path"],
+        "date": photo["date"],
+        "author": photo["author"],
+        "description": photo["description"],
+        "image": image_state,
+    }
+    serialized = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(serialized.encode("utf-8")).hexdigest()
 
 
 def generate_photo_pages(project_root: Path | None = None) -> int:
@@ -193,48 +242,67 @@ def generate_photo_pages(project_root: Path | None = None) -> int:
     if invalid_ids:
         raise RuntimeError(f"Identificadores públicos no seguros: {invalid_ids[:5]}")
 
-    staging = Path(tempfile.mkdtemp(prefix=".f-build-", dir=project_root))
-    # tempfile crea el directorio con 0700. La web se sirve con nginx y debe
-    # poder atravesar el directorio final una vez se renombre a `f/`.
-    staging.chmod(0o755)
-    try:
-        for photo, photo_id in zip(photos, ids):
-            image_name = Path(photo["path"]).name
-            dimensions = jpeg_dimensions(project_root / "files" / image_name)
-            meta = build_meta_block(
-                photo_id,
-                image_name,
-                photo["author"],
-                photo["description"],
-                dimensions,
-            )
-            page = META_BLOCK_RE.sub(meta, template, count=1)
-            destination = staging / photo_id
-            destination.mkdir()
-            (destination / "index.html").write_text(page, encoding="utf-8")
+    output = project_root / "f"
+    output.mkdir(mode=0o755, exist_ok=True)
+    output.chmod(0o755)
+    manifest_path = project_root / MANIFEST_NAME
+    previous_signatures = load_manifest(manifest_path)
+    build_signature = hashlib.sha256(
+        template.encode("utf-8") + Path(__file__).read_bytes()
+    ).hexdigest()
 
-        output = project_root / "f"
-        backup = project_root / ".f-previous"
-        if backup.exists():
-            shutil.rmtree(backup)
-        output_existed = output.exists()
-        if output_existed:
-            output.replace(backup)
-        try:
-            staging.replace(output)
-        except Exception:
-            if output_existed and backup.exists() and not output.exists():
-                backup.replace(output)
-            raise
-        if backup.exists():
-            shutil.rmtree(backup)
-        write_sitemap(project_root, photos)
-    except Exception:
-        if staging.exists():
-            shutil.rmtree(staging)
-        raise
+    current_signatures: dict[str, str] = {}
+    generated = 0
+    unchanged = 0
+    for photo, photo_id in zip(photos, ids):
+        image_name = Path(photo["path"]).name
+        image_path = project_root / "files" / image_name
+        signature = photo_signature(photo, build_signature, image_path)
+        current_signatures[photo_id] = signature
+        page_path = output / photo_id / "index.html"
 
-    print(f"Páginas estáticas generadas: {len(photos)}")
+        if previous_signatures.get(photo_id) == signature and page_path.is_file():
+            unchanged += 1
+            continue
+
+        dimensions = jpeg_dimensions(image_path)
+        meta = build_meta_block(
+            photo_id,
+            image_name,
+            photo["author"],
+            photo["description"],
+            dimensions,
+        )
+        page = META_BLOCK_RE.sub(meta, template, count=1)
+        page_path.parent.mkdir(mode=0o755, parents=True, exist_ok=True)
+        page_path.parent.chmod(0o755)
+        write_text_if_changed(page_path, page)
+        generated += 1
+
+    current_ids = set(ids)
+    existing_ids = {
+        directory.name
+        for directory in output.iterdir()
+        if directory.is_dir() and SAFE_ID_RE.fullmatch(directory.name)
+    }
+    removed_ids = sorted(existing_ids - current_ids)
+    for photo_id in removed_ids:
+        shutil.rmtree(output / photo_id)
+
+    manifest = json.dumps(
+        {"version": 1, "pages": current_signatures},
+        ensure_ascii=False,
+        indent=2,
+        sort_keys=True,
+    ) + "\n"
+    write_text_if_changed(manifest_path, manifest, mode=0o600)
+    sitemap_changed = write_sitemap(project_root, photos)
+
+    print(
+        f"Páginas estáticas: {generated} generadas, {unchanged} sin cambios, "
+        f"{len(removed_ids)} eliminadas, {len(photos)} totales; "
+        f"sitemap {'actualizado' if sitemap_changed else 'sin cambios'}"
+    )
     return len(photos)
 
 

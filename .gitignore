@@ -7,3 +7,6 @@ f/
 sitemap.xml
 __pycache__/
 *.pyc
+.photo-pages-manifest.json
+.feed-rss.lock
+.feed-rss-state.json

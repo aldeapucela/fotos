@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
+import fcntl
+import hashlib
 import sqlite3
 import os
 import json
 from datetime import datetime
+from pathlib import Path
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
-from generate_photo_pages import generate_photo_pages
+from generate_photo_pages import generate_photo_pages, write_text_if_changed
 
 def iso8601_to_rfc822(iso_date):
     """Convert ISO 8601 date to RFC 822 format required by RSS"""
@@ -15,14 +18,14 @@ def iso8601_to_rfc822(iso_date):
         dt = datetime.fromisoformat(date_part)
         # Convert to RFC 822 format
         return dt.strftime('%a, %d %b %Y %H:%M:%S +') + tz.replace(':', '')
-    except:
-        return datetime.now().strftime('%a, %d %b %Y %H:%M:%S +0200')
+    except (AttributeError, TypeError, ValueError):
+        return 'Thu, 01 Jan 1970 00:00:00 +0000'
 
-def generate_rss():
+def generate_rss(project_root=None):
     try:
         # Get the project root directory (parent of scripts directory)
-        project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        db_path = os.path.join(project_root, 'fotos.db')
+        project_root = Path(project_root) if project_root else Path(__file__).resolve().parent.parent
+        db_path = project_root / 'fotos.db'
         
         # Create RSS feed structure
         rss = ET.Element('rss', version='2.0')
@@ -48,23 +51,52 @@ def generate_rss():
         language = ET.SubElement(channel, 'language')
         language.text = 'es'
         
-        # Add item generation time
+        # Se completa con la fecha de la foto más reciente para que la salida
+        # sea determinista cuando la base de datos no ha cambiado.
         lastBuildDate = ET.SubElement(channel, 'lastBuildDate')
-        lastBuildDate.text = datetime.now().strftime('%a, %d %b %Y %H:%M:%S +0200')
         
         # Connect to database and get all photos. RSS is limited below, while
         # the JSON feed exposes the complete result set.
-        conn = sqlite3.connect(db_path)
-        cursor = conn.cursor()
-        cursor.execute("""
-            SELECT i.path, i.date, i.author, i.description 
-            FROM imagenes i
-            LEFT JOIN image_analysis ia ON ia.image_id = i.id
-            WHERE i.description IS NOT NULL 
-            AND (ia.is_appropriate = 1 OR ia.is_appropriate IS NULL)
-            ORDER BY i.date DESC
-        """)
-        photos = cursor.fetchall()
+        with sqlite3.connect(db_path) as conn:
+            photos = conn.execute("""
+                SELECT i.path, i.date, i.author, i.description
+                FROM imagenes i
+                LEFT JOIN image_analysis ia ON ia.image_id = i.id
+                WHERE i.description IS NOT NULL
+                AND (ia.is_appropriate = 1 OR ia.is_appropriate IS NULL)
+                ORDER BY i.date DESC
+            """).fetchall()
+
+        output_path = project_root / 'feed.xml'
+        json_output_path = project_root / 'data.json'
+        state_path = project_root / '.feed-rss-state.json'
+        signature_payload = json.dumps(
+            {
+                'script': hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+                'photos': photos,
+            },
+            ensure_ascii=False,
+            separators=(',', ':'),
+        )
+        feed_signature = hashlib.sha256(signature_payload.encode('utf-8')).hexdigest()
+        try:
+            previous_signature = json.loads(
+                state_path.read_text(encoding='utf-8')
+            ).get('signature')
+        except (FileNotFoundError, json.JSONDecodeError, OSError):
+            previous_signature = None
+
+        if (
+            previous_signature == feed_signature
+            and output_path.is_file()
+            and json_output_path.is_file()
+        ):
+            print(f"RSS: sin cambios ({output_path})")
+            print(f"JSON: sin cambios ({json_output_path})")
+            generate_photo_pages(project_root)
+            return
+
+        lastBuildDate.text = datetime.now().strftime('%a, %d %b %Y %H:%M:%S +0200')
 
         channel_data = {
             'title': title.text,
@@ -127,26 +159,40 @@ def generate_rss():
         xmlstr = minidom.parseString(ET.tostring(rss)).toprettyxml(indent="  ")
         
         # Write to file
-        output_path = os.path.join(project_root, 'feed.xml')
-        with open(output_path, 'w', encoding='utf-8') as f:
-            f.write(xmlstr)
+        rss_changed = write_text_if_changed(output_path, xmlstr)
 
-        json_output_path = os.path.join(project_root, 'data.json')
-        with open(json_output_path, 'w', encoding='utf-8') as f:
-            json.dump([{'rss': {
+        json_content = json.dumps([{'rss': {
                 'version': '2.0',
                 'channel': channel_data
-            }}], f, ensure_ascii=False, indent=2)
-            f.write('\n')
+            }}], ensure_ascii=False, indent=2) + '\n'
+        json_changed = write_text_if_changed(json_output_path, json_content)
 
-        print(f"RSS feed generado correctamente en {output_path}")
-        print(f"JSON feed generado correctamente en {json_output_path}")
-        conn.close()
+        print(f"RSS: {'actualizado' if rss_changed else 'sin cambios'} ({output_path})")
+        print(f"JSON: {'actualizado' if json_changed else 'sin cambios'} ({json_output_path})")
+        state_content = json.dumps(
+            {'version': 1, 'signature': feed_signature},
+            indent=2,
+            sort_keys=True,
+        ) + '\n'
+        write_text_if_changed(state_path, state_content, mode=0o600)
         generate_photo_pages(project_root)
         
     except Exception as e:
         print(f"Error generando el feed RSS: {e}")
         raise
 
+
+def main():
+    project_root = Path(__file__).resolve().parent.parent
+    lock_path = project_root / '.feed-rss.lock'
+    with lock_path.open('a+', encoding='utf-8') as lock_file:
+        try:
+            fcntl.flock(lock_file, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            print('Otra generación sigue activa; se omite esta ejecución.')
+            return
+        generate_rss(project_root)
+
+
 if __name__ == "__main__":
-    generate_rss()
+    main()
