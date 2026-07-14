@@ -44,6 +44,11 @@ class StaticPhotoPagesTest(unittest.TestCase):
         self.assertIn('name="twitter:card" content="summary_large_image"', page)
         self.assertRegex(page, r'property="og:image:width" content="\d+"')
         self.assertRegex(page, r'property="og:image:height" content="\d+"')
+        self.assertNotIn("x.com/javcalles", page)
+
+    def test_urls_and_wrapping_parentheses_are_removed_from_share_text(self):
+        text = "Foto del día (https://example.com/original) y más https://example.org/info"
+        self.assertEqual(MODULE.strip_urls_for_sharing(text), "Foto del día y más ")
 
     def test_generated_pages_use_root_absolute_local_assets(self):
         page = (PROJECT_ROOT / "f" / "184500" / "index.html").read_text(encoding="utf-8")

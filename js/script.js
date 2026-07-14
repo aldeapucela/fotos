@@ -1287,10 +1287,21 @@ function shareGeneral() {
     }
 
 // Add share functionality
+function stripUrlsForSharing(text = '') {
+  return text
+    .replace(/[ \t]*\([ \t]*https?:\/\/[^\s<>()]+[ \t]*\)/gi, '')
+    .replace(/https?:\/\/[^\s<>()]+/gi, '')
+    .replace(/\(\s*\)/g, '')
+    .replace(/[ \t]{2,}/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
 function sharePhoto(photoId, description = '') {
   const url = getAbsolutePhotoUrl(photoId);
-  const shareText = description 
-    ? `Mira esta foto de Valladolid de Aldea Pucela\n\n"${description}"\n\n`
+  const cleanDescription = stripUrlsForSharing(description);
+  const shareText = cleanDescription
+    ? `Mira esta foto de Valladolid de Aldea Pucela\n\n"${cleanDescription}"\n\n`
     : `Mira esta foto de Valladolid de Aldea Pucela\n\n`;
 
   if (navigator.share) {

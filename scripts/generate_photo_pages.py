@@ -21,6 +21,8 @@ META_BLOCK_RE = re.compile(
     re.DOTALL,
 )
 SAFE_ID_RE = re.compile(r"^[A-Za-z0-9_-]+$")
+URL_RE = re.compile(r"https?://[^\s<>()]+", re.IGNORECASE)
+PARENTHESIZED_URL_RE = re.compile(r"[ \t]*\([ \t]*https?://[^\s<>()]+[ \t]*\)", re.IGNORECASE)
 
 
 def photo_id_from_path(image_path: str) -> str:
@@ -62,8 +64,15 @@ def jpeg_dimensions(image_path: Path) -> tuple[int, int] | None:
         return None
 
 
+def strip_urls_for_sharing(value: str | None) -> str:
+    """Remove external URLs and their empty wrapping parentheses."""
+    without_parenthesized_urls = PARENTHESIZED_URL_RE.sub("", value or "")
+    without_urls = URL_RE.sub("", without_parenthesized_urls)
+    return re.sub(r"\(\s*\)", "", without_urls)
+
+
 def clean_text(value: str | None, limit: int) -> str:
-    normalized = " ".join((value or "").split())
+    normalized = " ".join(strip_urls_for_sharing(value).split())
     if len(normalized) <= limit:
         return normalized
     return normalized[: limit - 1].rstrip() + "…"
