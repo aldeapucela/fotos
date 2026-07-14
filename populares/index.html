@@ -23,7 +23,7 @@
  <meta property="og:title" content="Fotos populares - Fotos de Valladolid - Aldea Pucela">
  <meta property="og:type" content="website">
  <meta property="og:description" content="Las fotos más populares de Valladolid basadas en likes y comentarios">
- <meta property="og:image" content="https://fotos.aldeapucela.org/img/preview.png">
+ <meta property="og:image" content="https://fotos.aldeapucela.org/img/preview-social.jpg">
  <meta property="og:url" content="https://fotos.aldeapucela.org/populares/">
  <meta name="twitter:card" content="summary_small_image">
  
@@ -63,7 +63,11 @@
 <div class="bg-instagram-100 dark:bg-instagram-800 text-instagram-700 dark:text-instagram-300 text-xs px-4 py-3">
   <div class="container mx-auto flex items-center">
     <a href="https://aldeapucela.org/" class="text-instagram-500 hover:text-instagram-700" title="Aldea Pucela">
-      <img src="../img/preview.png" alt="Aldea Pucela Avatar" class="w-12 h-12 rounded-full mr-4 border-2 border-instagram-400 shadow" style="object-fit:cover;" />
+      <picture>
+        <source media="(prefers-color-scheme: dark)" type="image/webp" srcset="../img/preview-dark.webp" />
+        <source type="image/webp" srcset="../img/preview.webp" />
+        <img src="../img/preview.png" alt="Aldea Pucela Avatar" class="w-12 h-12 rounded-full mr-4 border-2 border-instagram-400 shadow" style="object-fit:cover;" />
+      </picture>
     </a>
     <div class="flex flex-col text-left">
       <p class="mb-1"><span id="totalPhotosCount">0</span> fotos creadas por la comunidad <a class="underline" href="https://aldeapucela.org/">Aldea Pucela</a></p>
