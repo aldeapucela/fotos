@@ -7,6 +7,14 @@ let currentPopularitySort = 'default'; // 'default', 'likes', 'comments'
 let allPhotos = []; // Para almacenar todas las fotos
 let blueskyCache = {}; // Para almacenar datos de Bluesky
 
+function getPhotoUrl(photoId) {
+  return `/f/${encodeURIComponent(photoId)}/`;
+}
+
+function getAbsolutePhotoUrl(photoId) {
+  return `${window.location.origin}${getPhotoUrl(photoId)}`;
+}
+
 // Función para ordenar fotos por popularidad
 function sortPhotosByPopularity(photos, sortType) {
   if (sortType === 'default') {
@@ -16,8 +24,8 @@ function sortPhotosByPopularity(photos, sortType) {
   const cache = window._blueskyCountersCache || {};
   
   return photos.sort((a, b) => {
-    const urlA = `${window.location.origin}${window.location.pathname}#${getPhotoIdFromPath(a.path)}`;
-    const urlB = `${window.location.origin}${window.location.pathname}#${getPhotoIdFromPath(b.path)}`;
+    const urlA = getAbsolutePhotoUrl(getPhotoIdFromPath(a.path));
+    const urlB = getAbsolutePhotoUrl(getPhotoIdFromPath(b.path));
     
     const countersA = cache[urlA] || { commentCount: 0, likeCount: 0 };
     const countersB = cache[urlB] || { commentCount: 0, likeCount: 0 };
@@ -117,18 +125,37 @@ function clearPopularityFilter() {
 
 // URL handling functions
 function getPhotoIdFromUrl() {
-    const hash = window.location.hash;
-    return hash ? hash.slice(1) : null;
+  const pathMatch = window.location.pathname.match(/^\/f\/([^/]+)\/?$/);
+  if (pathMatch) {
+    try {
+      return decodeURIComponent(pathMatch[1]);
+    } catch (error) {
+      return null;
+    }
+  }
+  return window.location.hash ? window.location.hash.slice(1) : null;
 }
 
 function updateUrl(photoId) {
-    const url = new URL(window.location);
-    if (photoId) {
-        url.hash = photoId;
-    } else {
-        url.hash = '';
-    }
-    window.history.pushState(null, '', url);
+  if (!photoId) return;
+  const currentPhotoId = getPhotoIdFromUrl();
+  const target = getPhotoUrl(photoId);
+  if (currentPhotoId === photoId && !window.location.hash) return;
+
+  if (currentPhotoId) {
+    window.history.replaceState(window.history.state, '', target);
+  } else {
+    window.history.pushState({ openedFromGallery: true }, '', target);
+  }
+}
+
+// Los fragmentos nunca llegan al servidor. Migra las URLs históricas a la
+// página estática equivalente tan pronto como sea posible.
+if (window.location.hash && window.location.pathname === '/') {
+  const legacyPhotoId = window.location.hash.slice(1);
+  if (/^[A-Za-z0-9_-]+$/.test(legacyPhotoId)) {
+    window.location.replace(getPhotoUrl(legacyPhotoId) + window.location.search);
+  }
 }
 
 // Search photos by text
@@ -425,11 +452,11 @@ if (listViewBtn) {
 }
 
 // Open lightbox with photo details
-function openLightbox(imgSrc, data) {
+function openLightbox(imgSrc, data, { updateHistory = true } = {}) {
   // Obtener filename y telegramId para la URL canónica y Telegram
   const filename = data.path?.split('/').pop() || '';
   const telegramId = filename.replace('.jpg', '').replace('.png', '').replace('.jpeg', '');
-  const canonicalUrl = window.location.origin + window.location.pathname + '#' + telegramId;
+  const canonicalUrl = getAbsolutePhotoUrl(telegramId);
   const blueskyDiv = document.getElementById('bluesky-comments');
   const commentsBtn = document.getElementById('lightbox-chat-btn');
   const commentsBadge = document.getElementById('lightbox-comments-count');
@@ -559,7 +586,7 @@ function openLightbox(imgSrc, data) {
 
   // Create Telegram URL
   const telegramUrl = `https://t.me/AldeaPucela/27202/${telegramId}`;
-  updateUrl(telegramId);
+  if (updateHistory) updateUrl(telegramId);
   
   // Set author name with link to Telegram
   const lightboxAutorDiv = document.getElementById('lightbox-autor');
@@ -730,11 +757,15 @@ ifLightbox(() => {
 });
 
 // Close lightbox
-function closeLightbox() {
+function closeLightbox({ updateHistory = true } = {}) {
   if (!lightbox) return;
   lightbox.classList.remove('active');
   document.body.style.overflow = '';
-  updateUrl('');
+  if (updateHistory && getPhotoIdFromUrl()) {
+    // Reemplazar evita que filtros y enlaces del lightbox compitan con un
+    // popstate asíncrono y que Atrás vuelva a abrir la misma foto.
+    window.history.replaceState({}, '', `/${window.location.search}`);
+  }
   setTimeout(() => {
     if (lightboxImg) lightboxImg.src = '';
   }, 300);
@@ -931,7 +962,7 @@ if (searchParam) {
                 if (card) {
                   const filename = img.dataset.src?.split('/').pop() || '';
                   const telegramId = filename.replace('.jpg', '').replace('.png', '').replace('.jpeg', '');
-                  const canonicalUrl = window.location.origin + window.location.pathname + '#' + telegramId;
+                  const canonicalUrl = getAbsolutePhotoUrl(telegramId);
                   window._blueskyCountersCache = window._blueskyCountersCache || {};
                   const countersCache = window._blueskyCountersCache;
                   // Solo si no está ya en caché
@@ -1035,10 +1066,10 @@ if (searchParam) {
           // Check if image is appropriate (check specifically for 0)
           const isAppropriate = data.is_appropriate !== 0;
           
-          // Only add click handler if the image is appropriate
+          // Guardar los datos para navegación con Atrás/Adelante.
           if (isAppropriate) {
-            item.onclick = () => openLightbox(fullPath, data);
-            item.classList.add('cursor-pointer');
+            item._photoPath = fullPath;
+            item._photoData = data;
           } else {
             item.style.cursor = 'not-allowed';
           }
@@ -1058,13 +1089,16 @@ if (searchParam) {
           const safeDate = DOMPurify.sanitize(data.date || '');
           const safeTelegramId = DOMPurify.sanitize(telegramId);
           const safeDescription = data.description ? DOMPurify.sanitize(data.description) : '';
+          const safePhotoUrl = DOMPurify.sanitize(getPhotoUrl(telegramId));
+          const safePhotoLabel = DOMPurify.sanitize(`Abrir foto: ${data.description || `Foto ${telegramId}`}`);
           
-          // Create photo card HTML
+          // La imagen es un enlace real para mostrar su destino al pasar el
+          // cursor y permitir que los buscadores descubran cada foto.
           const photoCardHtml = isAppropriate ? `
-            <div class="photo-card-image relative pb-[100%] bg-instagram-100 dark:bg-instagram-700">
+            <a href="${safePhotoUrl}" aria-label="${safePhotoLabel}" class="photo-card-image relative block pb-[100%] bg-instagram-100 dark:bg-instagram-700 focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-instagram-500">
               <img loading="lazy" data-src="${safeFullPath}" alt="${safeAiDescription}" 
-                   class="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-300">
-            </div>
+                   class="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-300 hover:opacity-90">
+            </a>
           ` : `
             <div class="photo-card-image relative pb-[100%] bg-instagram-100 dark:bg-instagram-700">
               <div class="absolute inset-0 w-full h-full flex flex-col items-center justify-center text-center p-4 bg-instagram-200 dark:bg-instagram-700">
@@ -1163,7 +1197,7 @@ if (searchParam) {
       if (photoToOpen) {
         // Small delay to ensure filters are applied first
         setTimeout(() => {
-          openLightbox(photoToOpen.path, photoToOpen.data);
+          openLightbox(photoToOpen.path, photoToOpen.data, { updateHistory: false });
         }, 100);
       }
 
@@ -1224,7 +1258,13 @@ ifLightbox(() => {
 window.addEventListener('popstate', () => {
   const photoId = getPhotoIdFromUrl();
   if (!photoId) {
-    closeLightbox();
+    closeLightbox({ updateHistory: false });
+    return;
+  }
+
+  const photoCard = document.querySelector(`.photo-card[data-photo-id="${CSS.escape(photoId)}"]`);
+  if (photoCard?._photoPath && photoCard?._photoData) {
+    openLightbox(photoCard._photoPath, photoCard._photoData, { updateHistory: false });
   }
 });
 
@@ -1248,7 +1288,7 @@ function shareGeneral() {
 
 // Add share functionality
 function sharePhoto(photoId, description = '') {
-  const url = `${window.location.origin}${window.location.pathname}#${photoId}`;
+  const url = getAbsolutePhotoUrl(photoId);
   const shareText = description 
     ? `Mira esta foto de Valladolid de Aldea Pucela\n\n"${description}"\n\n`
     : `Mira esta foto de Valladolid de Aldea Pucela\n\n`;
@@ -1340,37 +1380,6 @@ if (uploadDialog) {
     });
   }
 }
-
-// On page load, check both tag and photo ID
-window.addEventListener('load', () => {
-    const tagParam = urlParams.get('tag');
-    const elementParam = urlParams.get('element');
-    const photoIdFromUrl = getPhotoIdFromUrl();
-    
-    // Apply tag or element filter first if present
-    if (elementParam) {
-        filterByElement(elementParam);
-    } else if (tagParam) {
-        filterByTag(new Event('click'), tagParam);
-    }
-    
-    // Then wait a bit for photos to load and open lightbox if needed
-    if (photoIdFromUrl) {
-        setTimeout(() => {
-            const photoCard = document.querySelector(`[data-photo-id="${photoIdFromUrl}"]`);
-            if (photoCard) {
-                const imgSrc = photoCard.querySelector('img').dataset.src;
-                const data = {
-                    description: photoCard.dataset.description,
-                    author: photoCard.querySelector('.font-medium').textContent.trim(),
-                    date: photoCard.querySelector('.text-xs').dataset.originalDate,
-                    path: imgSrc
-                };
-                openLightbox(imgSrc, data);
-            }
-        }, 500);
-    }
-});
 
 // Delegación de eventos para enlaces de hashtags
 
@@ -1755,7 +1764,7 @@ if (blueskyCommentsBtn) {
     if (img && img.src) {
       const filename = img.src.split('/').pop();
       const telegramId = filename.replace('.jpg', '').replace('.png', '').replace('.jpeg', '');
-      const canonicalUrl = window.location.origin + window.location.pathname + '#' + telegramId;
+      const canonicalUrl = getAbsolutePhotoUrl(telegramId);
       const blueskyDiv = document.getElementById('bluesky-comments');
       
       // Mostrar loader, abrir panel y cargar comentarios cada vez

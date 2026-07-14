@@ -19,21 +19,25 @@ function timeAgo(date) {
   return `${years} ${years === 1 ? 'año' : 'años'}`;
 }
 
+function getImageIdFromUrl(photoUrl) {
+  const value = photoUrl || window.location.href;
+  if (!value.startsWith('http')) return value.replace(/^\/files\//, '');
+
+  try {
+    const url = new URL(value);
+    const pathMatch = url.pathname.match(/^\/f\/([^/]+)\/?$/);
+    if (pathMatch) return decodeURIComponent(pathMatch[1]);
+    if (url.hash) return url.hash.slice(1);
+    return url.pathname.split('/').filter(Boolean).pop() || '';
+  } catch (error) {
+    return value;
+  }
+}
+
 
 window.getBlueskyThreadStats = async function(photoUrl) {
   // Use DatabaseManager para evitar descargas múltiples
-  let imagePath = null;
-  let canonicalUrl = photoUrl || window.location.href;
-  if (canonicalUrl.startsWith('http')) {
-    const hash = canonicalUrl.split('#')[1];
-    if (hash) {
-      imagePath = hash; // Solo el ID, sin asumir extensión
-    } else {
-      imagePath = canonicalUrl.split('/').pop();
-    }
-  } else {
-    imagePath = canonicalUrl;
-  }
+  const imagePath = getImageIdFromUrl(photoUrl);
   
   try {
     // Verificar que DatabaseManager esté disponible
@@ -95,21 +99,7 @@ window.getBlueskyThreadStats = async function(photoUrl) {
 
 // Función para cargar los comentarios de Bluesky
 async function loadBlueskyComments(photoUrl, returnCountOnly = false) {
-  // photoUrl es la URL canónica de la foto (con hash) o la ruta de la imagen
-  let imagePath = null;
-  let canonicalUrl = photoUrl || window.location.href;
-  // Extraer el nombre del archivo del hash o ruta de la URL
-  if (canonicalUrl.startsWith('http')) {
-    const hash = canonicalUrl.split('#')[1];
-    if (hash) {
-      imagePath = hash; // Solo el ID, sin asumir extensión
-    } else {
-      // fallback: try to extract last path segment
-      imagePath = canonicalUrl.split('/').pop();
-    }
-  } else {
-    imagePath = canonicalUrl;
-  }
+  const imagePath = getImageIdFromUrl(photoUrl);
   const commentsDiv = document.getElementById("bluesky-comments");
   try {
     // Verificar que DatabaseManager esté disponible

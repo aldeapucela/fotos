@@ -9,7 +9,8 @@ aldeapucela/fotos/
 ├── scripts/          # Scripts de mantenimiento
 │   ├── subir-foto.py
 │   ├── borrar-foto.py
-│   ├── feed-rss.py   # Generador del feed RSS
+│   ├── feed-rss.py   # Generador de RSS, JSON y páginas estáticas
+│   ├── generate_photo_pages.py # Generador de URLs /f/{id}/
 │   ├── update-tags.py
 │   ├── update-ai-tags.py
 │   └── bluesky-sync.py  # Sincronización con Bluesky
@@ -22,6 +23,8 @@ aldeapucela/fotos/
 ├── fotos.db.sample   # Plantilla de la base de datos
 ├── feed.xml          # Feed RSS con las últimas 100 fotos aptas
 ├── data.json         # API JSON con todas las fotos aptas
+├── f/                # Páginas estáticas generadas para compartir fotos
+├── sitemap.xml       # Sitemap generado con las URLs públicas
 ├── tags-cache.json   # Caché de etiquetas
 ├── ai-tags-cache.json # Caché de etiquetas generadas por IA
 ├── index.html        # Galería principal
@@ -128,9 +131,22 @@ Esta tabla se actualiza automáticamente mediante el script `bluesky-sync.py`.
 ```
 - Genera un feed RSS con las últimas 100 fotos aptas
 - Genera `data.json` con todas las fotos aptas y los mismos campos que cada elemento RSS
+- Genera una página estática `/f/{id}/` para cada foto pública y actualiza `sitemap.xml`
 - Incluye descripciones, autores y enlaces directos
 - Indica la licencia CC BY-SA 4.0 de las imágenes
 - Se recomienda ejecutar cada 5 minutos en un cron
+
+Las páginas individuales contienen metadatos Open Graph y Twitter Card que
+apuntan directamente a la imagen original de `/files/`. No se crean copias ni
+miniaturas. El comando también puede ejecutarse de forma independiente:
+
+```bash
+python3 ./scripts/generate_photo_pages.py
+```
+
+La URL canónica de una foto es `https://fotos.aldeapucela.org/f/184500/`.
+Las URLs históricas `/#184500` se conservan y se migran automáticamente en el
+navegador a la URL canónica.
 
 ### Sincronización con Bluesky
 ```bash
@@ -222,8 +238,12 @@ El archivo `ai-tags-cache.json` mantiene un conteo similar para las etiquetas ge
 
 1. Asegúrate que todas las imágenes están en el directorio `files/`
 2. Verifica que `fotos.db` está actualizado
-3. Ejecuta `update-tags.py` para regenerar el caché de hashtags
-4. Ejecuta `update-ai-tags.py` para regenerar el caché de etiquetas IA
+3. Ejecuta `feed-rss.py` para generar RSS, JSON, sitemap y páginas `/f/{id}/`
+4. Ejecuta `update-tags.py` para regenerar el caché de hashtags
+5. Ejecuta `update-ai-tags.py` para regenerar el caché de etiquetas IA
+
+El servidor debe servir índices de directorio convencionales para que
+`/f/184500/` resuelva el archivo `f/184500/index.html`.
 
 ## Añadir una foto nueva manualmente
 

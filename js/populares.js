@@ -309,7 +309,7 @@ function renderPhotos() {
 
 function createPhotoCard(photo, index) {
   const card = document.createElement('div');
-  card.className = 'photo-card relative bg-white dark:bg-instagram-800 rounded-lg shadow-sm overflow-hidden transform transition-all hover:shadow-lg hover:scale-[1.02] cursor-pointer';
+  card.className = 'photo-card relative bg-white dark:bg-instagram-800 rounded-lg shadow-sm overflow-hidden transform transition-all hover:shadow-lg hover:scale-[1.02]';
   
   const filename = photo.path;
   const telegramId = filename.replace('.jpg', '').replace('.png', '').replace('.jpeg', '');
@@ -335,8 +335,8 @@ function createPhotoCard(photo, index) {
   }
   
   card.innerHTML = `
-    ${rankBadge}
-    <div class="aspect-square relative overflow-hidden">
+    <a href="/f/${encodeURIComponent(telegramId)}/" aria-label="Abrir foto popular" class="block aspect-square relative overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-instagram-500">
+      ${rankBadge}
       <img 
         data-src="${fullPath}" 
         alt="${DOMPurify.sanitize(photo.ai_description || photo.description || '')}"
@@ -373,7 +373,7 @@ function createPhotoCard(photo, index) {
           </div>
         </div>
       </div>
-    </div>
+    </a>
     
     <!-- Photo info -->
     <div class="p-3">
@@ -385,11 +385,6 @@ function createPhotoCard(photo, index) {
       </div>
     </div>
   `;
-  
-  // Add click handler - redirect to main gallery with photo ID
-  card.addEventListener('click', () => {
-    window.location.href = `../#${telegramId}`;
-  });
   
   return card;
 }

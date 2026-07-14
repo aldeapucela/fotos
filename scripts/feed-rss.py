@@ -5,6 +5,7 @@ import json
 from datetime import datetime
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
+from generate_photo_pages import generate_photo_pages
 
 def iso8601_to_rfc822(iso_date):
     """Convert ISO 8601 date to RFC 822 format required by RSS"""
@@ -92,14 +93,14 @@ def generate_rss():
             else:
                 title_text = os.path.basename(path)
 
-            item_link = f'https://fotos.aldeapucela.org/#{path.replace(".jpg", "")}'
+            image_id = os.path.splitext(os.path.basename(path))[0]
+            item_link = f'https://fotos.aldeapucela.org/f/{image_id}/'
 
             # Item description
             html_desc = f'<img src="https://fotos.aldeapucela.org/files/{path}" style="max-width:600px;height:auto;"/>'
             if description:
                 html_desc += f'<p>{description}</p>'
             if author:
-                image_id = path.replace('.jpg', '')
                 html_desc += f'<p>Autor/a: {author} - CC BY-SA 4.0</p>'
                 html_desc += f'<p><a href="https://t.me/AldeaPucela/27202/{image_id}">Ver original</a></p>'
 
@@ -141,9 +142,11 @@ def generate_rss():
         print(f"RSS feed generado correctamente en {output_path}")
         print(f"JSON feed generado correctamente en {json_output_path}")
         conn.close()
+        generate_photo_pages(project_root)
         
     except Exception as e:
         print(f"Error generando el feed RSS: {e}")
+        raise
 
 if __name__ == "__main__":
     generate_rss()
