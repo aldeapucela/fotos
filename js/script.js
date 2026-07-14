@@ -796,6 +796,10 @@ if (searchParam) {
 
     // Continue with existing query for photos usando DatabaseManager
     const res = await window.databaseManager.getPhotosData();
+    const totalPhotosCount = document.getElementById('totalPhotosCount');
+    if (totalPhotosCount && res.length > 0) {
+      totalPhotosCount.textContent = res[0].values.length.toLocaleString('es-ES');
+    }
     
     const contenido = document.getElementById('contenido');
     if (contenido) contenido.innerHTML = '';

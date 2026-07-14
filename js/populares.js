@@ -88,6 +88,11 @@ async function loadPopularPhotos() {
     }
 
     const db = await window.databaseManager.getDatabase();
+    const totalResult = db.exec('SELECT COUNT(*) AS total FROM imagenes');
+    const totalPhotosCount = document.getElementById('totalPhotosCount');
+    if (totalPhotosCount && totalResult.length > 0) {
+      totalPhotosCount.textContent = totalResult[0].values[0][0].toLocaleString('es-ES');
+    }
     
     // Query for popular photos with Bluesky stats
     const query = `
