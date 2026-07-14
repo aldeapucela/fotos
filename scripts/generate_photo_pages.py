@@ -185,6 +185,9 @@ def generate_photo_pages(project_root: Path | None = None) -> int:
         raise RuntimeError(f"Identificadores públicos no seguros: {invalid_ids[:5]}")
 
     staging = Path(tempfile.mkdtemp(prefix=".f-build-", dir=project_root))
+    # tempfile crea el directorio con 0700. La web se sirve con nginx y debe
+    # poder atravesar el directorio final una vez se renombre a `f/`.
+    staging.chmod(0o755)
     try:
         for photo, photo_id in zip(photos, ids):
             image_name = Path(photo["path"]).name

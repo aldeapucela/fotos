@@ -1,6 +1,7 @@
 import importlib.util
 import re
 import sqlite3
+import stat
 import unittest
 from pathlib import Path
 
@@ -54,6 +55,10 @@ class StaticPhotoPagesTest(unittest.TestCase):
     def test_sitemap_contains_photo_url(self):
         sitemap = (PROJECT_ROOT / "sitemap.xml").read_text(encoding="utf-8")
         self.assertIn("https://fotos.aldeapucela.org/f/184500/", sitemap)
+
+    def test_generated_directory_is_web_server_traversable(self):
+        mode = stat.S_IMODE((PROJECT_ROOT / "f").stat().st_mode)
+        self.assertEqual(mode, 0o755)
 
 
 if __name__ == "__main__":
