@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <g id="feather-mono">
+      <path d="M0 0
+               C 8 -80 8 -150 12 -192
+               C 30 -232 48 -252 42 -288
+               C 36 -320 20 -338 0 -346
+               C -20 -338 -36 -320 -42 -288
+               C -48 -252 -30 -232 -12 -192
+               C -8 -150 -8 -80 0 0 Z" fill="#ffffff"/>
+      <ellipse cx="0" cy="-284" rx="24" ry="34" fill="#000000"/>
+      <circle cx="-7" cy="-296" r="7" fill="#ffffff"/>
+    </g>
+  </defs>
+
+  <mask id="cut" maskUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024">
+    <rect width="1024" height="1024" fill="#000000"/>
+    <g transform="translate(512 520) scale(1.12) translate(-512 -500)">
+      <!-- Peacock tail fan -->
+      <use href="#feather-mono" transform="translate(512 505) rotate(-52) scale(0.9)"/>
+      <use href="#feather-mono" transform="translate(512 505) rotate(-26) scale(1.0)"/>
+      <use href="#feather-mono" transform="translate(512 505) rotate(26) scale(1.0)"/>
+      <use href="#feather-mono" transform="translate(512 505) rotate(52) scale(0.9)"/>
+      <use href="#feather-mono" transform="translate(512 505) rotate(0) scale(1.08)"/>
+
+      <!-- Camera body (white = keep) -->
+      <rect x="648" y="500" width="64" height="30" rx="13" fill="#ffffff"/>
+      <rect x="418" y="458" width="188" height="90" rx="22" fill="#ffffff"/>
+      <rect x="262" y="520" width="500" height="298" rx="56" fill="#ffffff"/>
+
+      <!-- Flash window (hole) -->
+      <rect x="300" y="558" width="76" height="46" rx="14" fill="#000000"/>
+
+      <!-- Lens rings: white / gap / white / gap / catchlight -->
+      <circle cx="512" cy="668" r="146" fill="#ffffff"/>
+      <circle cx="512" cy="668" r="124" fill="#000000"/>
+      <circle cx="512" cy="668" r="92"  fill="#ffffff"/>
+      <circle cx="512" cy="668" r="64"  fill="#000000"/>
+      <circle cx="482" cy="634" r="22"  fill="#ffffff"/>
+    </g>
+  </mask>
+
+  <rect width="1024" height="1024" fill="#ffffff" mask="url(#cut)"/>
+</svg>

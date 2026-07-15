@@ -69,6 +69,8 @@ class StaticPhotoPagesTest(unittest.TestCase):
         self.assertIn("Comparte tu mirada de Valladolid", page)
         self.assertIn("Enviar por Telegram", page)
         self.assertIn('class="gallery-brand-mark"', page)
+        self.assertIn('src="/img/marca/isotipo-fotos.svg"', page)
+        self.assertIn('href="/img/marca/isotipo-fotos-512.png"', page)
         self.assertIn('id="scrollTopBrand" href="/"', page)
         self.assertNotIn('class="gallery-brand" title="Aldea Pucela"', page)
         self.assertNotIn('class="fa-brands fa-creative-commons license-mark"', page)

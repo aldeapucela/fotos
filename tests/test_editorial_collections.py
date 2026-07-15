@@ -164,14 +164,14 @@ class EditorialCollectionsTest(unittest.TestCase):
         self.assertIn('name="twitter:card" content="summary_large_image"', overview)
         self.assertTrue((PROJECT_ROOT / "img" / "preview-miradas.jpg").is_file())
 
-    def test_editorial_pages_load_the_shared_png_favicon(self):
+    def test_editorial_pages_load_the_fotos_brand_favicon(self):
         for page in (
             PROJECT_ROOT / "miradas" / "index.html",
             PROJECT_ROOT / "miradas" / "arte-en-los-muros" / "index.html",
         ):
             content = page.read_text(encoding="utf-8")
             self.assertIn(
-                '<link rel="icon" type="image/png" href="https://aldeapucela.org/img/favicon.png">',
+                '<link rel="icon" type="image/png" href="/img/marca/isotipo-fotos-512.png">',
                 content,
             )
             self.assertIn("img-src 'self' data: https://fotos.aldeapucela.org https://aldeapucela.org", content)
