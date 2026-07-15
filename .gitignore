@@ -11,3 +11,7 @@ __pycache__/
 .photo-pages-manifest.json
 .feed-rss.lock
 .feed-rss-state.json
+.DS_Store
+.audit-ux/
+img/preview-concept-*.png
+img/preview-dark.png

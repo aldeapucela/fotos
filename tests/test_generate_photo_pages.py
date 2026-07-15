@@ -52,12 +52,30 @@ class StaticPhotoPagesTest(unittest.TestCase):
         text = "Foto del día (https://example.com/original) y más https://example.org/info"
         self.assertEqual(MODULE.strip_urls_for_sharing(text), "Foto del día y más ")
 
+    def test_photo_without_description_has_no_numeric_fallback_title(self):
+        self.assertEqual(MODULE.photo_title("174855", None), "Foto de Valladolid")
+        self.assertNotIn("174855", MODULE.photo_title("174855", ""))
+
     def test_generated_pages_use_root_absolute_local_assets(self):
         page = (PROJECT_ROOT / "f" / "184500" / "index.html").read_text(encoding="utf-8")
         relative_asset = re.search(r'(?:src|href)="(?:js|css)/', page)
         self.assertIsNone(relative_asset)
         self.assertIn('src="/js/script.js', page)
         self.assertIn('href="/css/style.css', page)
+
+    def test_generated_pages_include_the_new_gallery_shell(self):
+        page = (PROJECT_ROOT / "f" / "184500" / "index.html").read_text(encoding="utf-8")
+        self.assertIn("Valladolid fotografiada por sus vecinos", page)
+        self.assertIn("Comparte tu mirada de Valladolid", page)
+        self.assertIn("Enviar por Telegram", page)
+        self.assertIn('class="gallery-brand-mark"', page)
+        self.assertIn('id="scrollTopBrand" href="/"', page)
+        self.assertNotIn('class="gallery-brand" title="Aldea Pucela"', page)
+        self.assertNotIn('class="fa-brands fa-creative-commons license-mark"', page)
+        self.assertIn('id="licenseInfoButton"', page)
+        self.assertIn('aria-label="Navegación principal"', page)
+        self.assertIn('src="/js/gallery-shell.js', page)
+        self.assertNotIn('<span id="totalPhotosCount">0</span>', page)
 
     def test_sitemap_contains_photo_url(self):
         sitemap = (PROJECT_ROOT / "sitemap.xml").read_text(encoding="utf-8")

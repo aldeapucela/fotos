@@ -9,6 +9,10 @@ let allPhotos = [];
 let filteredPhotos = [];
 let currentPhotoIndex = 0;
 let visiblePhotos = [];
+let popularReturnUrl = null;
+let popularReturnScrollY = null;
+let currentPopularPhoto = null;
+let isPopularLightboxSliding = false;
 
 // Parámetros de URL válidos
 const validPeriods = ['all', 'year', '6months', 'month', 'week'];
@@ -17,6 +21,7 @@ const validSorts = ['likes', 'comments', 'engagement'];
 // Elementos DOM
 const contenido = document.getElementById('contenido');
 const currentFilterSpan = document.getElementById('current-filter');
+const popularFilterStatus = document.getElementById('popular-filter-status');
 const statsInfo = document.getElementById('stats-info');
 
 // Sidebar elements
@@ -89,17 +94,17 @@ async function loadPopularPhotos() {
 
     const db = await window.databaseManager.getDatabase();
     const totalResult = db.exec('SELECT COUNT(*) AS total FROM imagenes');
-    const totalPhotosCount = document.getElementById('totalPhotosCount');
-    if (totalPhotosCount && totalResult.length > 0) {
-      totalPhotosCount.textContent = totalResult[0].values[0][0].toLocaleString('es-ES');
+    if (totalResult.length > 0) {
+      window.updateTotalPhotosCount?.(totalResult[0].values[0][0]);
     }
     
     // Query for popular photos with Bluesky stats
     const query = `
-      SELECT i.*, bic.like_count, bic.comment_count, bic.repost_count, bic.last_updated,
+      SELECT i.*, bic.like_count, bic.comment_count, bic.repost_count, bic.last_updated, bp.post_id,
              ia.is_appropriate, ia.description as ai_description, ia.tags as ai_tags
       FROM imagenes i
       JOIN bluesky_interactions_cache bic ON i.id = bic.image_id
+      JOIN bluesky_posts bp ON i.id = bp.image_id
       LEFT JOIN image_analysis ia ON i.id = ia.image_id
       WHERE (ia.is_appropriate = 1 OR ia.is_appropriate IS NULL)
         AND (bic.like_count > 0 OR bic.comment_count > 0 OR bic.repost_count > 0)
@@ -253,7 +258,11 @@ function updateFilterDisplay() {
   };
   
   if (currentFilterSpan) {
-    currentFilterSpan.textContent = `${periodText[currentPeriod]} • ${sortText[currentSort]}`;
+    currentFilterSpan.textContent = `${periodText[currentPeriod]} · ${sortText[currentSort]}`;
+  }
+
+  if (popularFilterStatus) {
+    popularFilterStatus.hidden = currentPeriod === 'all' && currentSort === 'likes';
   }
 }
 
@@ -294,7 +303,7 @@ function renderPhotos() {
   
   // Create grid
   const grid = document.createElement('div');
-  grid.className = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2';
+  grid.className = 'grid gallery-photo-grid';
   
   filteredPhotos.forEach((photo, index) => {
     const photoCard = createPhotoCard(photo, index);
@@ -309,84 +318,244 @@ function renderPhotos() {
 
 function createPhotoCard(photo, index) {
   const card = document.createElement('div');
-  card.className = 'photo-card relative bg-white dark:bg-instagram-800 rounded-lg shadow-sm overflow-hidden transform transition-all hover:shadow-lg hover:scale-[1.02]';
+  card.className = 'photo-card';
   
   const filename = photo.path;
   const telegramId = filename.replace('.jpg', '').replace('.png', '').replace('.jpeg', '');
   const fullPath = `/files/${photo.path}`;
   
-  // Add rank badge for top photos
-  let rankBadge = '';
-  if (index < 3) {
-    const colors = ['bg-yellow-500', 'bg-gray-400', 'bg-orange-600'];
-    const icons = ['fa-trophy', 'fa-medal', 'fa-medal'];
-    rankBadge = `
-      <div class="absolute top-2 left-2 ${colors[index]} text-white text-xs px-2 py-1 rounded-full flex items-center gap-1 z-10">
-        <i class="fas ${icons[index]}"></i>
-        <span>#${index + 1}</span>
-      </div>
-    `;
-  } else if (index < 10) {
-    rankBadge = `
-      <div class="absolute top-2 left-2 bg-instagram-600 text-white text-xs px-2 py-1 rounded-full z-10">
-        #${index + 1}
-      </div>
-    `;
-  }
-  
+  const safeDescription = DOMPurify.sanitize(photo.description || '');
+  const safeAuthor = DOMPurify.sanitize(photo.author || 'Desconocido');
+  const telegramUrl = `https://t.me/AldeaPucela/27202/${encodeURIComponent(telegramId)}`;
+  card.dataset.photoId = telegramId;
+  card._photoData = photo;
+
+  const compactStats = (photo.like_count || photo.comment_count) ? `
+    <span class="popular-photo-stats" aria-label="${photo.like_count || 0} likes y ${photo.comment_count || 0} comentarios">
+      ${(photo.like_count || 0) > 0 ? `<span><i class="fa-regular fa-heart" aria-hidden="true"></i>${photo.like_count}</span>` : ''}
+      ${(photo.comment_count || 0) > 0 ? `<span><i class="fa-regular fa-comment" aria-hidden="true"></i>${photo.comment_count}</span>` : ''}
+    </span>` : '';
+  const descriptionMarkup = safeDescription
+    ? `<p class="photo-list-description line-clamp-2">${safeDescription}</p>`
+    : '';
+
   card.innerHTML = `
-    <a href="/f/${encodeURIComponent(telegramId)}/" aria-label="Abrir foto popular" class="block aspect-square relative overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-instagram-500">
-      ${rankBadge}
+    <a href="/f/${encodeURIComponent(telegramId)}/" aria-label="Abrir foto popular" class="photo-card-image block relative overflow-hidden">
       <img 
         data-src="${fullPath}" 
         alt="${DOMPurify.sanitize(photo.ai_description || photo.description || '')}"
-        class="w-full h-full object-cover opacity-0 transition-opacity duration-300 lazy-image"
+        class="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-300 lazy-image"
         loading="lazy"
       >
-      <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
-      
-      <!-- Stats overlay -->
-      <div class="absolute bottom-2 left-2 right-2 text-white text-xs">
-        <div class="flex justify-between items-end">
-          <div class="flex gap-3">
-            ${(photo.like_count || 0) > 0 ? `
-              <span class="flex items-center gap-1">
-                <i class="fa-regular fa-heart"></i>
-                <span>${photo.like_count}</span>
-              </span>
-            ` : ''}
-            ${(photo.comment_count || 0) > 0 ? `
-              <span class="flex items-center gap-1">
-                <i class="fa-regular fa-comment"></i>
-                <span>${photo.comment_count}</span>
-              </span>
-            ` : ''}
-            ${(photo.repost_count || 0) > 0 ? `
-              <span class="flex items-center gap-1">
-                <i class="fa-solid fa-retweet"></i>
-                <span>${photo.repost_count}</span>
-              </span>
-            ` : ''}
-          </div>
-          <div class="text-right">
-            <div class="text-xs opacity-75">${formatDate(photo.date)}</div>
-          </div>
-        </div>
-      </div>
+      ${compactStats}
     </a>
-    
-    <!-- Photo info -->
-    <div class="p-3">
-      <div class="text-sm font-medium mb-1 line-clamp-2">
-        ${DOMPurify.sanitize(photo.description ? convertHashtagsToLinks(photo.description.split('\n')[0]) : 'Sin descripción', { ADD_ATTR: ['data-tag', 'target', 'rel'] })}
-      </div>
-      <div class="text-xs text-instagram-500">
-        Por ${DOMPurify.sanitize(photo.author || 'Desconocido')}
-      </div>
+    <div class="photo-details">
+      ${descriptionMarkup}
+      <p class="photo-list-meta">
+        <span class="photo-list-date">${formatDate(photo.date)}</span>
+        <span class="photo-list-separator" aria-hidden="true">·</span>
+        <a class="photo-provenance" href="${telegramUrl}" target="_blank" rel="noopener noreferrer" title="Ver mensaje original en Telegram">Compartida por <span>${safeAuthor}</span></a>
+      </p>
     </div>
   `;
   
   return card;
+}
+
+function getPopularPhotoId(photo) {
+  return photo.path.replace(/\.(?:jpe?g|png)$/i, '');
+}
+
+function openPopularLightbox(photo, { updateHistory = true } = {}) {
+  const lightbox = document.getElementById('lightbox');
+  const image = document.getElementById('lightbox-img');
+  if (!lightbox || !image || !photo) return;
+
+  const photoId = getPopularPhotoId(photo);
+  const fullPath = `/files/${photo.path}`;
+  const canonicalUrl = `${window.location.origin}/f/${encodeURIComponent(photoId)}/`;
+  const blueskyUrl = photo.post_id
+    ? `https://bsky.app/profile/fotos.aldeapucela.org/post/${encodeURIComponent(photo.post_id)}`
+    : '';
+  currentPopularPhoto = photo;
+  visiblePhotos = [...filteredPhotos];
+  currentPhotoIndex = visiblePhotos.findIndex(item => getPopularPhotoId(item) === photoId);
+
+  image.src = fullPath;
+  image.alt = photo.ai_description || photo.description || '';
+
+  const description = document.getElementById('lightbox-desc');
+  if (description) {
+    description.innerHTML = DOMPurify.sanitize(convertDescriptionToLinks(photo.description || '', true), {
+      ADD_ATTR: ['data-tag', 'target', 'rel']
+    });
+  }
+
+  const author = document.getElementById('lightbox-autor');
+  if (author) {
+    author.innerHTML = '';
+    const icon = document.createElement('i');
+    icon.className = 'fa-regular fa-user mr-2';
+    icon.setAttribute('aria-hidden', 'true');
+    const authorLink = document.createElement('a');
+    authorLink.href = `https://t.me/AldeaPucela/27202/${encodeURIComponent(photoId)}`;
+    authorLink.target = '_blank';
+    authorLink.rel = 'noopener noreferrer';
+    authorLink.textContent = photo.author || 'Desconocido';
+    author.append(icon, authorLink);
+  }
+
+  const date = document.querySelector('#lightbox-fecha span');
+  if (date) date.textContent = formatDate(photo.date);
+
+  const download = document.getElementById('lightbox-download');
+  if (download) {
+    download.href = fullPath;
+    download.download = photo.path;
+  }
+
+  const likesLink = document.getElementById('lightbox-likes');
+  const likes = likesLink?.querySelector('span');
+  const comments = document.getElementById('lightbox-comments-count');
+  if (likes) likes.textContent = photo.like_count || 0;
+  if (likesLink) {
+    likesLink.href = blueskyUrl;
+    likesLink.hidden = !blueskyUrl;
+    likesLink.setAttribute('aria-label', `Ver y dar me gusta en Bluesky (${photo.like_count || 0})`);
+  }
+  if (comments) {
+    comments.textContent = photo.comment_count || 0;
+    comments.hidden = !(photo.comment_count > 0);
+  }
+  const commentsButton = document.getElementById('lightbox-chat-btn');
+  if (commentsButton) {
+    commentsButton.hidden = !blueskyUrl;
+    commentsButton.setAttribute('aria-label', `Ver o añadir comentarios (${photo.comment_count || 0})`);
+  }
+
+  const share = document.getElementById('lightbox-share');
+  if (share) {
+    share.onclick = event => {
+      event.stopPropagation();
+      if (navigator.share) {
+        navigator.share({ title: 'Foto de Valladolid', text: photo.description || '', url: canonicalUrl }).catch(() => {});
+      } else {
+        navigator.clipboard.writeText(canonicalUrl).catch(() => {});
+      }
+    };
+  }
+
+  document.getElementById('prevPhoto')?.classList.toggle('hidden', currentPhotoIndex <= 0);
+  document.getElementById('nextPhoto')?.classList.toggle('hidden', currentPhotoIndex >= visiblePhotos.length - 1);
+  lightbox.classList.add('active');
+  document.body.style.overflow = 'hidden';
+
+  if (updateHistory) {
+    if (!popularReturnUrl) {
+      popularReturnUrl = `${window.location.pathname}${window.location.search}`;
+      popularReturnScrollY = window.scrollY;
+      window.history.pushState({ popularLightbox: true, photoId, galleryScrollY: popularReturnScrollY }, '', `/f/${encodeURIComponent(photoId)}/`);
+    } else {
+      window.history.replaceState({ popularLightbox: true, photoId }, '', `/f/${encodeURIComponent(photoId)}/`);
+    }
+  }
+}
+
+function closePopularLightbox({ updateHistory = true } = {}) {
+  const lightbox = document.getElementById('lightbox');
+  if (!lightbox?.classList.contains('active')) return;
+  lightbox.classList.remove('active');
+  closePopularCommentsPanel();
+  document.body.style.overflow = '';
+  const returnScrollY = popularReturnScrollY ?? window.history.state?.galleryScrollY;
+  window.setTimeout(() => {
+    const image = document.getElementById('lightbox-img');
+    if (image) image.src = '';
+  }, 300);
+
+  if (updateHistory && popularReturnUrl) {
+    window.history.replaceState({}, '', popularReturnUrl);
+    popularReturnUrl = null;
+  }
+  if (Number.isFinite(returnScrollY)) {
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => window.scrollTo({ top: returnScrollY, behavior: 'auto' }));
+    });
+  }
+  popularReturnScrollY = null;
+}
+
+async function openPopularCommentsPanel() {
+  if (!currentPopularPhoto) return;
+  const panel = document.getElementById('bluesky-comments-panel');
+  const panelInner = document.getElementById('bluesky-comments-panel-inner');
+  const comments = document.getElementById('bluesky-comments');
+  if (!panel || !panelInner || !comments) return;
+
+  comments.innerHTML = '<div class="text-center text-instagram-500 py-4">Cargando comentarios...</div>';
+  panel.classList.add('pointer-events-auto');
+  panelInner.classList.remove('translate-y-full', 'opacity-0');
+  panelInner.classList.add('translate-y-0', 'opacity-100');
+
+  const photoId = getPopularPhotoId(currentPopularPhoto);
+  const canonicalUrl = `${window.location.origin}/f/${encodeURIComponent(photoId)}/`;
+  if (typeof window.loadBlueskyComments === 'function') {
+    await window.loadBlueskyComments(canonicalUrl);
+  }
+}
+
+function closePopularCommentsPanel() {
+  const panel = document.getElementById('bluesky-comments-panel');
+  const panelInner = document.getElementById('bluesky-comments-panel-inner');
+  if (!panel || !panelInner) return;
+  panel.classList.remove('pointer-events-auto');
+  panelInner.classList.remove('translate-y-0', 'opacity-100');
+  panelInner.classList.add('translate-y-full', 'opacity-0');
+}
+
+function transitionToPopularPhoto(direction, updatePhoto) {
+  if (isPopularLightboxSliding || typeof updatePhoto !== 'function') return;
+  const lightbox = document.getElementById('lightbox');
+  const image = document.getElementById('lightbox-img');
+  if (!image || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    updatePhoto();
+    return;
+  }
+
+  isPopularLightboxSliding = true;
+  lightbox?.classList.add('is-sliding');
+  const outClass = direction > 0 ? 'lightbox-slide-out-left' : 'lightbox-slide-out-right';
+  const inClass = direction > 0 ? 'lightbox-slide-in-right' : 'lightbox-slide-in-left';
+  image.classList.add(outClass);
+
+  window.setTimeout(() => {
+    if (!lightbox?.classList.contains('active')) {
+      image.classList.remove(outClass);
+      lightbox?.classList.remove('is-sliding');
+      isPopularLightboxSliding = false;
+      return;
+    }
+
+    updatePhoto();
+    image.classList.remove(outClass);
+    image.classList.add(inClass);
+
+    window.setTimeout(() => {
+      image.classList.remove(inClass);
+      lightbox?.classList.remove('is-sliding');
+      isPopularLightboxSliding = false;
+    }, 220);
+  }, 120);
+}
+
+function showAdjacentPopularPhoto(direction) {
+  const nextIndex = currentPhotoIndex + direction;
+  if (nextIndex < 0 || nextIndex >= visiblePhotos.length) return;
+  const photo = visiblePhotos[nextIndex];
+  transitionToPopularPhoto(direction, () => {
+    currentPhotoIndex = nextIndex;
+    openPopularLightbox(photo);
+  });
 }
 
 function setupLazyLoading() {
@@ -498,13 +667,58 @@ document.addEventListener('DOMContentLoaded', () => {
   if (menuToggle) menuToggle.addEventListener('click', toggleSidebar);
   if (closeSidebar) closeSidebar.addEventListener('click', toggleSidebar);
   if (sidebarOverlay) sidebarOverlay.addEventListener('click', toggleSidebar);
+
+  contenido?.addEventListener('click', event => {
+    const link = event.target.closest('.photo-card-image');
+    if (!link || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    const card = link.closest('.photo-card');
+    if (!card?._photoData) return;
+    event.preventDefault();
+    openPopularLightbox(card._photoData);
+  });
+
+  document.getElementById('lightbox-close')?.addEventListener('click', () => closePopularLightbox());
+  document.getElementById('lightbox')?.addEventListener('click', event => {
+    if (event.target.id === 'lightbox') closePopularLightbox();
+  });
+  document.getElementById('lightbox-chat-btn')?.addEventListener('click', event => {
+    event.stopPropagation();
+    openPopularCommentsPanel();
+  });
+  document.getElementById('close-bluesky-comments')?.addEventListener('click', event => {
+    event.stopPropagation();
+    closePopularCommentsPanel();
+  });
+  document.getElementById('bluesky-comments-panel')?.addEventListener('click', event => {
+    if (event.target.id === 'bluesky-comments-panel') closePopularCommentsPanel();
+  });
+  document.getElementById('prevPhoto')?.addEventListener('click', event => {
+    event.stopPropagation();
+    showAdjacentPopularPhoto(-1);
+  });
+  document.getElementById('nextPhoto')?.addEventListener('click', event => {
+    event.stopPropagation();
+    showAdjacentPopularPhoto(1);
+  });
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape') {
+      const commentsPanel = document.getElementById('bluesky-comments-panel-inner');
+      if (commentsPanel?.classList.contains('translate-y-0')) {
+        closePopularCommentsPanel();
+        return;
+      }
+      closePopularLightbox();
+    }
+    if (event.key === 'ArrowLeft') showAdjacentPopularPhoto(-1);
+    if (event.key === 'ArrowRight') showAdjacentPopularPhoto(1);
+  });
   
   // Period filters
   document.querySelectorAll('.period-filter').forEach(btn => {
     btn.addEventListener('click', (e) => {
       document.querySelectorAll('.period-filter').forEach(b => b.classList.remove('period-active', 'bg-instagram-100', 'dark:bg-instagram-700'));
-      e.target.classList.add('period-active', 'bg-instagram-100', 'dark:bg-instagram-700');
-      currentPeriod = e.target.dataset.period;
+      btn.classList.add('period-active', 'bg-instagram-100', 'dark:bg-instagram-700');
+      currentPeriod = btn.dataset.period;
       applyFilters();
       toggleSidebar();
     });
@@ -514,35 +728,44 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('.sort-filter').forEach(btn => {
     btn.addEventListener('click', (e) => {
       document.querySelectorAll('.sort-filter').forEach(b => b.classList.remove('sort-active', 'bg-instagram-100', 'dark:bg-instagram-700'));
-      e.target.classList.add('sort-active', 'bg-instagram-100', 'dark:bg-instagram-700');
-      currentSort = e.target.dataset.sort;
+      btn.classList.add('sort-active', 'bg-instagram-100', 'dark:bg-instagram-700');
+      currentSort = btn.dataset.sort;
       applyFilters();
       toggleSidebar();
     });
+  });
+
+  document.getElementById('edit-popular-filters')?.addEventListener('click', () => {
+    toggleSidebar();
+    window.setTimeout(() => document.querySelector('.period-filter.period-active')?.focus(), 180);
+  });
+
+  document.getElementById('reset-popular-filters')?.addEventListener('click', () => {
+    currentPeriod = 'all';
+    currentSort = 'likes';
+    document.querySelectorAll('.period-filter').forEach(btn => {
+      btn.classList.toggle('period-active', btn.dataset.period === currentPeriod);
+      btn.classList.toggle('bg-instagram-100', btn.dataset.period === currentPeriod);
+      btn.classList.toggle('dark:bg-instagram-700', btn.dataset.period === currentPeriod);
+    });
+    document.querySelectorAll('.sort-filter').forEach(btn => {
+      btn.classList.toggle('sort-active', btn.dataset.sort === currentSort);
+      btn.classList.toggle('bg-instagram-100', btn.dataset.sort === currentSort);
+      btn.classList.toggle('dark:bg-instagram-700', btn.dataset.sort === currentSort);
+    });
+    applyFilters();
   });
   
   // View toggles
   if (gridViewBtn) {
     gridViewBtn.addEventListener('click', () => {
-      if (contenido) contenido.classList.remove('list-view');
-      gridViewBtn.classList.add('view-toggle-active');
-      if (listViewBtn) listViewBtn.classList.remove('view-toggle-active');
+      window.setGalleryView?.('grid');
     });
   }
   
   if (listViewBtn) {
     listViewBtn.addEventListener('click', () => {
-      if (contenido) contenido.classList.add('list-view');
-      listViewBtn.classList.add('view-toggle-active');
-      if (gridViewBtn) gridViewBtn.classList.remove('view-toggle-active');
-    });
-  }
-  
-  // Scroll to top on title click
-  const scrollTopTitle = document.getElementById('scrollTopTitle');
-  if (scrollTopTitle) {
-    scrollTopTitle.addEventListener('click', () => {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      window.setGalleryView?.('list');
     });
   }
   
@@ -567,6 +790,11 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Handle browser back/forward navigation
   window.addEventListener('popstate', () => {
+    if (document.getElementById('lightbox')?.classList.contains('active')) {
+      closePopularLightbox({ updateHistory: false });
+      popularReturnUrl = null;
+      return;
+    }
     getFiltersFromURL();
     applyFilters();
   });

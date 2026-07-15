@@ -85,7 +85,7 @@ def photo_title(photo_id: str, description: str | None) -> str:
         (line.strip() for line in (description or "").splitlines() if line.strip()),
         "",
     )
-    return clean_text(first_line, 70) or f"Foto de Valladolid {photo_id}"
+    return clean_text(first_line, 70) or "Foto de Valladolid"
 
 
 def build_meta_block(
@@ -181,7 +181,19 @@ def write_sitemap(project_root: Path, photos: list[sqlite3.Row]) -> bool:
     namespace = "http://www.sitemaps.org/schemas/sitemap/0.9"
     ET.register_namespace("", namespace)
     urlset = ET.Element(f"{{{namespace}}}urlset")
-    for location in ("/", "/populares/", "/etiquetas/", "/elementos/"):
+    locations = ["/", "/populares/", "/miradas/", "/etiquetas/", "/elementos/"]
+    collections_path = project_root / "data" / "editorial-collections.json"
+    if collections_path.exists():
+        try:
+            collections = json.loads(collections_path.read_text(encoding="utf-8"))
+            locations.extend(
+                f"/miradas/{collection['slug']}/"
+                for collection in collections
+                if collection.get("published") and collection.get("slug")
+            )
+        except (json.JSONDecodeError, OSError, TypeError, KeyError):
+            pass
+    for location in locations:
         url = ET.SubElement(urlset, f"{{{namespace}}}url")
         ET.SubElement(url, f"{{{namespace}}}loc").text = BASE_URL + location
     for photo in photos:
@@ -297,6 +309,21 @@ def generate_photo_pages(project_root: Path | None = None) -> int:
     ) + "\n"
     write_text_if_changed(manifest_path, manifest, mode=0o600)
     sitemap_changed = write_sitemap(project_root, photos)
+
+    editorial_template = project_root / "miradas" / "index.html"
+    editorial_config = project_root / "data" / "editorial-collections.json"
+    if editorial_template.exists() and editorial_config.exists():
+        try:
+            from generate_editorial_collections import generate_editorial_collections
+            generate_editorial_collections(project_root)
+        except ImportError:
+            import importlib.util
+            module_path = Path(__file__).with_name("generate_editorial_collections.py")
+            spec = importlib.util.spec_from_file_location("generate_editorial_collections", module_path)
+            module = importlib.util.module_from_spec(spec)
+            assert spec.loader is not None
+            spec.loader.exec_module(module)
+            module.generate_editorial_collections(project_root)
 
     print(
         f"Páginas estáticas: {generated} generadas, {unchanged} sin cambios, "

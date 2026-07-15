@@ -1,0 +1,72 @@
+[
+  {
+    "slug": "cuando-cae-la-noche",
+    "title": "Cuando cae la noche",
+    "shortTitle": "Valladolid de noche",
+    "description": "Calles, plazas y monumentos cambian de ritmo cuando se encienden las luces.",
+    "prompt": "Enséñanos cómo ves la ciudad cuando cae la noche.",
+    "contributionTag": "#noche",
+    "coverPhotoId": "98446",
+    "matchTags": ["noche"],
+    "manualInclude": [],
+    "manualExclude": [],
+    "featured": true,
+    "published": true
+  },
+  {
+    "slug": "arte-en-los-muros",
+    "title": "Arte en los muros",
+    "shortTitle": "Murales",
+    "description": "Paredes, persianas y rincones convertidos en una galería al aire libre.",
+    "prompt": "¿Has encontrado otro mural? Compártelo con la comunidad.",
+    "contributionTag": "#murales",
+    "coverPhotoId": "75574",
+    "matchTags": ["mural", "arte urbano", "grafiti", "graffiti"],
+    "manualInclude": [],
+    "manualExclude": [],
+    "featured": false,
+    "published": true
+  },
+  {
+    "slug": "a-orillas-del-rio",
+    "title": "A orillas del río",
+    "shortTitle": "Río y riberas",
+    "description": "El Pisuerga, el Esgueva y los paseos que acompañan su recorrido por la ciudad.",
+    "prompt": "Comparte tu rincón favorito junto al agua.",
+    "contributionTag": "#rio",
+    "coverPhotoId": "95938",
+    "matchTags": ["río", "ribera"],
+    "manualInclude": [],
+    "manualExclude": [],
+    "featured": false,
+    "published": true
+  },
+  {
+    "slug": "fuentes",
+    "title": "Fuentes",
+    "shortTitle": "Fuentes",
+    "description": "Agua, reflejos y lugares de encuentro repartidos por Valladolid.",
+    "prompt": "Fotografía una fuente y ayúdanos a completar el recorrido.",
+    "contributionTag": "#fuentes",
+    "coverPhotoId": "164741",
+    "matchTags": ["fuente", "surtidor"],
+    "manualInclude": [],
+    "manualExclude": [],
+    "featured": false,
+    "published": true
+  },
+  {
+    "slug": "valladolid-florece",
+    "title": "Valladolid florece",
+    "shortTitle": "Flores",
+    "description": "Flores espontáneas, jardines y pequeños estallidos de color entre el asfalto.",
+    "prompt": "Encuentra una flor, un jardín o un campo y compártelo con la comunidad.",
+    "contributionTag": "#flores",
+    "coverPhotoId": "44349",
+    "matchTags": ["flores", "flor", "jardín"],
+    "manualInclude": [],
+    "manualExclude": [],
+    "featured": false,
+    "published": true
+  }
+]

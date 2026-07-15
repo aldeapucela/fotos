@@ -32,47 +32,36 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="../js/tailwind-config.js"></script>
-  <link rel="stylesheet" href="../css/style.css?202504172016">
+  <link rel="stylesheet" href="../css/style.css?202607160330">
 </head>
 
-<body class="bg-instagram-50 dark:bg-instagram-900 text-instagram-900 dark:text-instagram-50 font-sans">
+<body class="gallery-page font-sans">
 
   <!-- Header with navigation -->  
-  <header class="sticky top-0 z-40 bg-white dark:bg-instagram-800 border-b border-instagram-200 dark:border-instagram-700 shadow-sm">
-    <div class="container mx-auto px-4 py-3">
-      <!-- Top row with logo and menu button -->
-      <div class="grid [grid-template-columns:auto_1fr_auto] items-center">
-  <div class="flex justify-start">
-    <a href="../" class="text-instagram-500 hover:text-instagram-700" title="Galería principal">
-      <i class="fa-solid fa-arrow-left"></i>
-    </a>
-  </div>
-  <div class="flex justify-center">
-    <h1 id="scrollTopTitle" class="font-light tracking-wide px-2 py-0.5 rounded text-center text-instagram-500 dark:text-instagram-300 whitespace-nowrap overflow-hidden text-ellipsis cursor-pointer" style="font-family: 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;">Fotos populares</h1>
-  </div>
-  <div class="flex justify-end">
-    <button id="menuToggle" class="text-instagram-500 hover:text-instagram-900 transition-colors">
-      <i class="fa-solid fa-bars text-xl"></i>
-    </button>
-  </div>
-</div>
+  <header class="gallery-header sticky top-0 z-40">
+    <div class="gallery-shell gallery-header-inner">
+      <a id="scrollTopBrand" href="/" class="gallery-brand" title="Volver arriba" aria-label="Volver al inicio de la página">
+        <span class="gallery-brand-mark" aria-hidden="true"><i class="fa-solid fa-camera"></i></span>
+      </a>
+      <h1 id="scrollTopTitle" class="gallery-title">Fotos de Valladolid</h1>
+      <div class="gallery-header-actions">
+        <button id="menuToggle" class="icon-button" type="button" aria-label="Abrir filtros" title="Filtros">
+          <i class="fa-solid fa-bars" aria-hidden="true"></i>
+        </button>
+      </div>
     </div>
   </header>
 
   <!-- License notice banner -->
-<div class="bg-instagram-100 dark:bg-instagram-800 text-instagram-700 dark:text-instagram-300 text-xs px-4 py-3">
-  <div class="container mx-auto flex items-center">
-    <a href="https://aldeapucela.org/" class="text-instagram-500 hover:text-instagram-700" title="Aldea Pucela">
-      <picture>
-        <source media="(prefers-color-scheme: dark)" type="image/webp" srcset="../img/preview-dark.webp" />
-        <source type="image/webp" srcset="../img/preview.webp" />
-        <img src="../img/preview.png" alt="Aldea Pucela Avatar" class="w-12 h-12 rounded-full mr-4 border-2 border-instagram-400 shadow" style="object-fit:cover;" />
-      </picture>
-    </a>
-    <div class="flex flex-col text-left">
-      <p class="mb-1"><span id="totalPhotosCount">0</span> fotos creadas por la comunidad <a class="underline" href="https://aldeapucela.org/">Aldea Pucela</a></p>
-      <p>Debe citase autor, url y licencia <a href="https://creativecommons.org/licenses/by-sa/4.0/deed.es" target="_blank" class="text-instagram-900 dark:text-instagram-300 underline">CC BY-SA 4.0</a></p>
+<div class="license-banner">
+  <div class="gallery-shell license-banner-inner">
+    <div class="license-copy">
+      <p class="license-tagline">Valladolid fotografiada por sus vecinos</p>
+      <p class="license-meta"><span id="totalPhotosCount" class="total-photos-count" aria-live="polite"></span><span id="totalPhotosFallback">Fotos de la comunidad</span> · Licencia CC BY-SA 4.0</p>
     </div>
+    <button id="licenseInfoButton" class="icon-button license-info-button" type="button" aria-label="Información sobre cómo citar" aria-haspopup="dialog" title="Cómo citar">
+      <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+    </button>
   </div>
 </div>
 
@@ -82,8 +71,8 @@
       <!-- Sidebar header -->
       <div class="p-4 border-b border-instagram-200 dark:border-instagram-700 flex justify-between items-center">
         <h2 class="text-lg font-medium">Filtros</h2>
-        <button id="closeSidebar" class="text-instagram-500 hover:text-instagram-700">
-          <i class="fa-solid fa-xmark text-xl"></i>
+        <button id="closeSidebar" class="text-instagram-500 hover:text-instagram-700" type="button" aria-label="Cerrar filtros">
+          <i class="fa-solid fa-xmark text-xl" aria-hidden="true"></i>
         </button>
       </div>
 
@@ -141,6 +130,10 @@
                 <i class="fa-solid fa-images w-5"></i>
                 <span>Galería principal</span>
               </a>
+              <a href="../miradas/" class="flex items-center gap-2 text-instagram-500 hover:text-instagram-700 py-1">
+                <i class="fa-regular fa-compass w-5"></i>
+                <span>Miradas</span>
+              </a>
               <a href="../etiquetas/" class="flex items-center gap-2 text-instagram-500 hover:text-instagram-700 py-1">
                 <i class="fa-solid fa-tags w-5"></i>
                 <span>Etiquetas populares</span>
@@ -159,34 +152,28 @@
   <div id="sidebarOverlay" class="fixed inset-0 bg-black/50 opacity-0 pointer-events-none transition-opacity duration-300 z-40"></div>
 
     <!-- Main content -->
-  <main class="container mx-auto px-2 sm:px-4 py-4">
-    <!-- Stats header -->
-    <div class="mb-6 text-center">
-      <div class="flex justify-center items-center gap-4 mb-2">
-        <i class="fa-solid fa-fire text-2xl text-orange-500"></i>
-        <h2 class="text-lg font-medium text-instagram-600 dark:text-instagram-400">
-          Las fotos más populares de Valladolid
-        </h2>
+  <main class="gallery-shell gallery-main">
+    <p id="stats-info" class="sr-only" aria-live="polite"></p>
+    <div class="gallery-section-header">
+      <h2 class="gallery-section-title">Populares</h2>
+      <div class="view-toggle" role="group" aria-label="Vista de la galería">
+        <button id="gridViewBtn" class="view-toggle-button view-toggle-active" type="button" aria-label="Vista de cuadrícula" aria-pressed="true">
+          <i class="fa-solid fa-table-cells-large" aria-hidden="true"></i>
+        </button>
+        <button id="listViewBtn" class="view-toggle-button" type="button" aria-label="Vista de lista" aria-pressed="false">
+          <i class="fa-solid fa-list" aria-hidden="true"></i>
+        </button>
       </div>
-      <p class="text-sm text-instagram-500" id="stats-info">
-        Basado en likes y comentarios de la comunidad en Bluesky
-      </p>
     </div>
 
-    <div class="flex justify-between items-center mb-4">
-      <div class="flex items-center gap-2">
-        <i class="fa-solid fa-trophy text-instagram-600"></i>
-        <span class="text-sm font-medium text-instagram-600 dark:text-instagram-400" id="current-filter">
-          Todo el tiempo • Más likes
-        </span>
+    <div id="popular-filter-status" class="popular-filter-status" aria-label="Filtros aplicados" aria-live="polite" hidden>
+      <div class="popular-filter-status-copy">
+        <i class="fa-solid fa-sliders" aria-hidden="true"></i>
+        <span id="current-filter">Todo el tiempo · Más likes</span>
       </div>
-      <div class="flex border border-instagram-200 dark:border-instagram-700 rounded-md overflow-hidden">
-        <button id="gridViewBtn" class="view-toggle-active px-3 py-1.5 bg-white dark:bg-instagram-800 text-instagram-500 dark:text-instagram-400">
-          <i class="fa-solid fa-th text-lg"></i>
-        </button>
-        <button id="listViewBtn" class="px-3 py-1.5 bg-white dark:bg-instagram-800 text-instagram-500 dark:text-instagram-400">
-          <i class="fa-solid fa-list text-lg"></i>
-        </button>
+      <div class="popular-filter-status-actions">
+        <button id="edit-popular-filters" type="button">Cambiar</button>
+        <button id="reset-popular-filters" type="button">Restablecer</button>
       </div>
     </div>
     
@@ -198,14 +185,46 @@
     </div>
   </main>
 
-  <!-- Floating Action Buttons -->
-  <div class="fixed bottom-6 right-6 z-40 flex flex-col gap-3">
-    <button id="shareGeneralBtn2" class="hover:bg-[#b39ddb] dark:bg-[#57316b] text-white w-10 h-10 rounded-full shadow-lg flex items-center justify-center bg-[#795DA9] dark:hover:bg-[#8C4EAD] transition-colors" title="Compartir">
-      <i class="fa-solid fa-share-nodes text-base"></i>
-    </button>
-    <a href="../" class="hover:bg-[#b39ddb] dark:bg-[#57316b] text-white w-10 h-10 rounded-full shadow-lg flex items-center justify-center bg-[#795DA9] dark:hover:bg-[#8C4EAD] transition-colors" title="Galería principal">
-      <i class="fa-solid fa-images text-base"></i>
-    </a>
+  <nav class="bottom-navigation" aria-label="Navegación principal">
+    <div class="bottom-navigation-inner bottom-navigation-four">
+      <a href="/" class="bottom-navigation-item">
+        <i class="fa-regular fa-clock" aria-hidden="true"></i><span>Recientes</span>
+      </a>
+      <a href="/populares/" class="bottom-navigation-item is-active" aria-current="page">
+        <i class="fa-solid fa-fire" aria-hidden="true"></i><span>Populares</span>
+      </a>
+      <a href="/miradas/" class="bottom-navigation-item">
+        <i class="fa-regular fa-compass" aria-hidden="true"></i><span>Miradas</span>
+      </a>
+      <button class="bottom-navigation-item uploadPhotoBtn" type="button" aria-label="Subir una foto propia">
+        <i class="fa-solid fa-arrow-up-from-bracket" aria-hidden="true"></i><span>Subir foto</span>
+      </button>
+    </div>
+  </nav>
+
+  <div id="uploadDialog" class="upload-dialog" role="dialog" aria-modal="true" aria-labelledby="uploadDialogTitle" hidden>
+    <div class="upload-dialog-backdrop" data-upload-close></div>
+    <div class="upload-dialog-panel" role="document">
+      <button id="closeUploadDialog" class="icon-button upload-dialog-close" type="button" data-upload-close aria-label="Cerrar"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+      <span class="license-dialog-eyebrow">Galería vecinal</span>
+      <h2 id="uploadDialogTitle">Comparte tu mirada de Valladolid</h2>
+      <p>Una calle, un rincón o una escena cotidiana: tu foto también puede formar parte de esta galería.</p>
+      <p>Envíala por Telegram con una breve descripción y, si quieres, #etiquetas. Tu nombre de Telegram aparecerá como autor.</p>
+      <p class="upload-dialog-note">Al enviarla confirmas que la foto es tuya y aceptas publicarla con licencia CC BY-SA 4.0.</p>
+      <a class="upload-dialog-primary" href="https://t.me/AldeaPucela/27202/27203" target="_blank" rel="noopener noreferrer">Enviar por Telegram <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i></a>
+    </div>
+  </div>
+
+  <div id="licenseInfoDialog" class="license-dialog" role="dialog" aria-modal="true" aria-labelledby="licenseInfoTitle" hidden>
+    <div class="license-dialog-backdrop" data-license-close></div>
+    <div class="license-dialog-panel" role="document">
+      <button class="icon-button license-dialog-close" type="button" data-license-close aria-label="Cerrar información de licencia"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+      <span class="license-dialog-eyebrow">CC BY-SA 4.0</span>
+      <h2 id="licenseInfoTitle">Cómo citar una fotografía</h2>
+      <p>Indica quién hizo la foto, enlaza su página original y conserva la licencia.</p>
+      <div class="attribution-example">Foto de [autor], publicada en Fotos de Valladolid — Aldea Pucela, [URL], CC BY-SA 4.0.</div>
+      <a class="license-dialog-link" href="https://creativecommons.org/licenses/by-sa/4.0/deed.es" target="_blank" rel="noopener noreferrer">Consultar la licencia completa <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i></a>
+    </div>
   </div>
   
   <!-- Footer with license notice -->  
@@ -219,8 +238,8 @@
   <div id="lightbox" class="lightbox fixed inset-0 z-50 bg-black/90 flex items-center justify-center overflow-auto">
     <div class="relative w-full max-w-4xl">
       <!-- Close button -->  
-      <button id="lightbox-close" class="absolute -top-12 right-4 text-white bg-black/50 rounded-full w-10 h-10 flex items-center justify-center">
-        <i class="fa-solid fa-xmark text-xl"></i>
+      <button id="lightbox-close" class="absolute -top-12 right-4 text-white bg-black/50 rounded-full w-10 h-10 flex items-center justify-center" type="button" aria-label="Cerrar foto">
+        <i class="fa-solid fa-xmark text-xl" aria-hidden="true"></i>
       </button>
       
       <!-- Photo container -->  
@@ -243,22 +262,26 @@
         <!-- Photo info -->  
         <div class="bg-white dark:bg-instagram-800 p-4">
           <div class="flex justify-between items-center mb-3">
-            <div class="flex gap-3">
-              <button id="lightbox-chat-btn" type="button" class="text-instagram-500 hover:text-instagram-700 flex items-center" title="Comentarios de Bluesky">
+            <div class="flex items-center gap-1" aria-label="Acciones de la foto">
+              <a id="lightbox-likes" href="" target="_blank" rel="noopener noreferrer" class="lightbox-action" title="Ver y dar me gusta en Bluesky" aria-label="Ver y dar me gusta en Bluesky">
+                <i class="fa-regular fa-heart text-xl" aria-hidden="true"></i>
+                <span class="text-base">0</span>
+              </a>
+              <button id="lightbox-chat-btn" type="button" class="lightbox-action" title="Ver o añadir comentarios" aria-label="Ver o añadir comentarios">
                 <i class="fa-regular fa-comment text-xl"></i>
-                <span id="lightbox-comments-count" class="ml-1 text-base text-instagram-500" style="display:none"></span>
+                <span id="lightbox-comments-count" class="text-base" hidden></span>
               </button>
-              <button id="lightbox-share" class="text-instagram-500 hover:text-instagram-700">
+              <button id="lightbox-share" class="lightbox-action" type="button" title="Compartir foto" aria-label="Compartir foto">
                 <i class="fa-solid fa-share-nodes text-xl"></i>
               </button>
-              <a id="lightbox-download" href="" download class="text-instagram-500 hover:text-instagram-700" title="Descargar foto">
+              <a id="lightbox-download" href="" download class="lightbox-action" title="Descargar foto" aria-label="Descargar foto">
                 <i class="fa-solid fa-download text-xl"></i>
               </a>
             </div>
             <a id="lightbox-license" class="text-xs text-instagram-500 hover:text-instagram-700" href="https://creativecommons.org/licenses/by-sa/4.0/deed.es" target="_blank">CC BY-SA 4.0</a>
           </div>
           <div id="lightbox-desc" class="text-sm mb-3"></div>
-          <div class="flex justify-between items-center">
+          <div class="flex items-center">
             <div class="flex items-center text-sm">
               <div id="lightbox-autor" class="flex items-center text-instagram-500">
                 <i class="fa-regular fa-user mr-2"></i>
@@ -269,25 +292,12 @@
                 <span></span>
               </div>
             </div>
-            <!-- Stats in lightbox -->
-            <div class="flex items-center gap-4 text-sm text-instagram-500">
-              <div id="lightbox-stats" class="flex items-center gap-3">
-                <span id="lightbox-likes" class="flex items-center gap-1">
-                  <i class="fa-regular fa-heart"></i>
-                  <span>0</span>
-                </span>
-                <span id="lightbox-comments" class="flex items-center gap-1">
-                  <i class="fa-regular fa-comment"></i>
-                  <span>0</span>
-                </span>
-              </div>
-            </div>
           </div>
         </div>
         <!-- Panel flotante de comentarios Bluesky -->
         <div id="bluesky-comments-panel" class="fixed inset-0 z-50 flex items-end justify-center pointer-events-none">
           <div class="relative w-full max-w-2xl pointer-events-auto transition-transform duration-300 translate-y-full opacity-0 bg-instagram-50 dark:bg-instagram-900 rounded-t-lg shadow-2xl border border-instagram-200 dark:border-instagram-700 max-h-[70vh] overflow-y-auto" id="bluesky-comments-panel-inner">
-            <button id="close-bluesky-comments" class="absolute top-2 right-2 text-instagram-500 hover:text-instagram-700 bg-white dark:bg-instagram-800 rounded-full w-8 h-8 flex items-center justify-center shadow"><i class="fa-solid fa-xmark text-lg"></i></button>
+            <button id="close-bluesky-comments" class="absolute top-2 right-2 text-instagram-500 hover:text-instagram-700 bg-white dark:bg-instagram-800 rounded-full w-11 h-11 flex items-center justify-center shadow" type="button" aria-label="Cerrar comentarios"><i class="fa-solid fa-xmark text-lg" aria-hidden="true"></i></button>
             <div id="bluesky-comments" class="p-4"></div>
           </div>
         </div>
@@ -300,7 +310,8 @@
   <!-- Bluesky Comments JS -->
   <script src="../js/bluesky-comments.js?202607141900"></script>
   <!-- Populares JS -->
-  <script src="../js/populares.js?202607141930"></script>
+  <script src="../js/gallery-shell.js?202607160125"></script>
+  <script src="../js/populares.js?202607152330"></script>
   <!-- Load Matomo Analytics -->
   <script src="../js/matomo.js"></script>
 </body>

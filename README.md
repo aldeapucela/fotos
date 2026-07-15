@@ -16,6 +16,9 @@ aldeapucela/fotos/
 │   └── bluesky-sync.py  # Sincronización con Bluesky
 ├── populares/        # Vista de fotos más populares
 │   └── index.html
+├── miradas/          # Índice y páginas generadas de selecciones editoriales
+├── data/
+│   └── editorial-collections.json # Configuración de Miradas
 ├── js/               # Scripts JavaScript
 │   ├── script.js     # Galería principal
 │   └── populares.js  # Vista de populares
@@ -149,6 +152,25 @@ python3 ./scripts/generate_photo_pages.py
 La URL canónica de una foto es `https://fotos.aldeapucela.org/f/184500/`.
 Las URLs históricas `/#184500` se conservan y se migran automáticamente en el
 navegador a la URL canónica.
+
+## Miradas editoriales
+
+La sección `/miradas/` agrupa fotografías mediante las etiquetas detectadas
+por IA y mantiene una invitación abierta para que la comunidad añada nuevas
+fotos desde Telegram. Las colecciones se administran en
+`data/editorial-collections.json`; no requieren cambios en SQLite.
+
+Cada definición permite configurar título, texto editorial, portada, etiquetas
+de coincidencia, etiqueta de participación y listas manuales de inclusión o
+exclusión. Las etiquetas de participación son breves y contextuales, por
+ejemplo `#murales`, `#noche` o `#fuentes`.
+
+Las páginas `/miradas/{slug}/` se regeneran junto con las fichas fotográficas o
+de forma independiente:
+
+```bash
+python3 ./scripts/generate_editorial_collections.py
+```
 
 ### Sincronización con Bluesky
 ```bash

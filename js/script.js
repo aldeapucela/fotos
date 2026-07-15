@@ -6,6 +6,8 @@
 let currentPopularitySort = 'default'; // 'default', 'likes', 'comments'
 let allPhotos = []; // Para almacenar todas las fotos
 let blueskyCache = {}; // Para almacenar datos de Bluesky
+let isLightboxSliding = false;
+let galleryReturnScrollY = null;
 
 function getPhotoUrl(photoId) {
   return `/f/${encodeURIComponent(photoId)}/`;
@@ -145,8 +147,15 @@ function updateUrl(photoId) {
   if (currentPhotoId) {
     window.history.replaceState(window.history.state, '', target);
   } else {
-    window.history.pushState({ openedFromGallery: true }, '', target);
+    window.history.pushState({ openedFromGallery: true, galleryScrollY: galleryReturnScrollY }, '', target);
   }
+}
+
+function restoreGalleryScroll(scrollY) {
+  if (!Number.isFinite(scrollY)) return;
+  window.requestAnimationFrame(() => {
+    window.requestAnimationFrame(() => window.scrollTo({ top: scrollY, behavior: 'auto' }));
+  });
 }
 
 // Los fragmentos nunca llegan al servidor. Migra las URLs históricas a la
@@ -437,19 +446,26 @@ if (searchInput) {
 // Toggle view modes (grid vs list)
 if (gridViewBtn) {
   gridViewBtn.addEventListener('click', () => {
-    contenidoEl.classList.remove('list-view');
-    gridViewBtn.classList.add('view-toggle-active');
-    if (listViewBtn) listViewBtn.classList.remove('view-toggle-active');
+    window.setGalleryView?.('grid');
   });
 }
 
 if (listViewBtn) {
   listViewBtn.addEventListener('click', () => {
-    contenidoEl.classList.add('list-view');
-    listViewBtn.classList.add('view-toggle-active');
-    if (gridViewBtn) gridViewBtn.classList.remove('view-toggle-active');
+    window.setGalleryView?.('list');
   });
 }
+
+contenido?.addEventListener('click', event => {
+  const link = event.target.closest('.photo-card-image');
+  if (!link || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+  const card = link.closest('.photo-card');
+  if (!card?._photoPath || !card?._photoData) return;
+
+  event.preventDefault();
+  galleryReturnScrollY = window.scrollY;
+  openLightbox(card._photoPath, card._photoData);
+});
 
 // Open lightbox with photo details
 function openLightbox(imgSrc, data, { updateHistory = true } = {}) {
@@ -687,21 +703,60 @@ function updateNavigationButtons() {
   nextButton.classList.toggle('hidden', currentPhotoIndex >= visiblePhotos.length - 1);
 }
 
+function transitionToPhoto(direction, updatePhoto) {
+  if (isLightboxSliding || typeof updatePhoto !== 'function') return;
+  if (!lightboxImg || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    updatePhoto();
+    return;
+  }
+
+  isLightboxSliding = true;
+  lightbox?.classList.add('is-sliding');
+  const outClass = direction > 0 ? 'lightbox-slide-out-left' : 'lightbox-slide-out-right';
+  const inClass = direction > 0 ? 'lightbox-slide-in-right' : 'lightbox-slide-in-left';
+  lightboxImg.classList.add(outClass);
+
+  window.setTimeout(() => {
+    if (!lightbox?.classList.contains('active')) {
+      lightboxImg.classList.remove(outClass);
+      lightbox.classList.remove('is-sliding');
+      isLightboxSliding = false;
+      return;
+    }
+
+    updatePhoto();
+    lightboxImg.classList.remove(outClass);
+    lightboxImg.classList.add(inClass);
+
+    window.setTimeout(() => {
+      lightboxImg.classList.remove(inClass);
+      lightbox?.classList.remove('is-sliding');
+      isLightboxSliding = false;
+    }, 220);
+  }, 120);
+}
+
 // Navigate to previous photo
 function showPrevPhoto() {
   if (currentPhotoIndex > 0) {
-    currentPhotoIndex--;
-    const photo = visiblePhotos[currentPhotoIndex];
-    openLightbox(photo.path, photo.data);
+    const nextIndex = currentPhotoIndex - 1;
+    const photo = visiblePhotos[nextIndex];
+    transitionToPhoto(-1, () => {
+      currentPhotoIndex = nextIndex;
+      openLightbox(photo.path, photo.data);
+    });
   }
 }
 
 // Navigate to next photo
 function showNextPhoto() {
   if (currentPhotoIndex < visiblePhotos.length - 1) {
-    currentPhotoIndex++;
-    const photo = visiblePhotos[currentPhotoIndex];
-    openLightbox(photo.path, photo.data);
+    const nextIndex = currentPhotoIndex + 1;
+    const photo = visiblePhotos[nextIndex];
+    transitionToPhoto(1, () => {
+      currentPhotoIndex = nextIndex;
+      openLightbox(photo.path, photo.data);
+    });
   }
 }
 
@@ -759,6 +814,7 @@ ifLightbox(() => {
 // Close lightbox
 function closeLightbox({ updateHistory = true } = {}) {
   if (!lightbox) return;
+  const returnScrollY = galleryReturnScrollY ?? window.history.state?.galleryScrollY;
   lightbox.classList.remove('active');
   document.body.style.overflow = '';
   if (updateHistory && getPhotoIdFromUrl()) {
@@ -766,6 +822,8 @@ function closeLightbox({ updateHistory = true } = {}) {
     // popstate asíncrono y que Atrás vuelva a abrir la misma foto.
     window.history.replaceState({}, '', `/${window.location.search}`);
   }
+  restoreGalleryScroll(returnScrollY);
+  galleryReturnScrollY = null;
   setTimeout(() => {
     if (lightboxImg) lightboxImg.src = '';
   }, 300);
@@ -827,9 +885,8 @@ if (searchParam) {
 
     // Continue with existing query for photos usando DatabaseManager
     const res = await window.databaseManager.getPhotosData();
-    const totalPhotosCount = document.getElementById('totalPhotosCount');
-    if (totalPhotosCount && res.length > 0) {
-      totalPhotosCount.textContent = res[0].values.length.toLocaleString('es-ES');
+    if (res.length > 0) {
+      window.updateTotalPhotosCount?.(res[0].values.length);
     }
     
     const contenido = document.getElementById('contenido');
@@ -1087,10 +1144,15 @@ if (searchParam) {
           const safeTelegramUrl = DOMPurify.sanitize(telegramUrl);
           const safeAuthor = DOMPurify.sanitize(data.author || 'Anónimo');
           const safeDate = DOMPurify.sanitize(data.date || '');
-          const safeTelegramId = DOMPurify.sanitize(telegramId);
           const safeDescription = data.description ? DOMPurify.sanitize(data.description) : '';
           const safePhotoUrl = DOMPurify.sanitize(getPhotoUrl(telegramId));
-          const safePhotoLabel = DOMPurify.sanitize(`Abrir foto: ${data.description || `Foto ${telegramId}`}`);
+          const safePhotoLabel = DOMPurify.sanitize(data.description ? `Abrir foto: ${data.description}` : 'Abrir foto');
+          const safeDescriptionHtml = safeDescription
+            ? DOMPurify.sanitize(convertHashtagsToLinks(safeDescription, false), { ADD_ATTR: ['data-tag', 'target', 'rel'] })
+            : '';
+          const descriptionMarkup = safeDescriptionHtml
+            ? `<p class="photo-list-description line-clamp-2">${safeDescriptionHtml}</p>`
+            : '';
           
           // La imagen es un enlace real para mostrar su destino al pasar el
           // cursor y permitir que los buscadores descubran cada foto.
@@ -1123,34 +1185,14 @@ if (searchParam) {
 
           const fullCardHtml = `
             ${photoCardHtml}
-            <div class="photo-details p-3">
-              <div class="flex items-center justify-between mb-2">
-                <div class="font-medium text-sm flex items-center">
-                  <i class="fa-regular fa-user text-instagram-400 mr-2"></i>
-                  <a href="${safeTelegramUrl}" target="_blank" rel="noopener noreferrer" class="hover:text-instagram-700">${safeAuthor}</a>
-                </div>
-                <div class="text-xs text-instagram-500" data-original-date="${safeDate}">
-                  <i class="fa-regular fa-clock mr-1"></i>
-                  ${dateFormatted}
-                </div>
-              </div>
-              ${safeDescription ? `<p class="text-sm text-instagram-500 line-clamp-2">${DOMPurify.sanitize(convertHashtagsToLinks(safeDescription, false), { ADD_ATTR: ['data-tag', 'target', 'rel'] })}</p>` : ''}
-              <div class="mt-2 flex flex-wrap sm:flex-nowrap gap-2 items-center justify-between text-instagram-400 text-lg">
-                <div class="actions flex items-center" data-photo-id="${safeTelegramId}">
-                  <span class="bluesky-icons flex items-center"></span>
-                  <button type="button" class="share-button hover:text-instagram-600 ml-3" 
-                          data-telegram-id="${safeTelegramId}" data-description="${encodeURIComponent(safeDescription)}" 
-                          title="Compartir">
-                    <i class="fa-solid fa-share-nodes"></i>
-                  </button>
-                  ${isAppropriate ? `
-                    <a href="${safeFullPath}" download class="text-instagram-500 hover:text-instagram-700 ml-3" title="Descargar foto">
-                      <i class="fa-solid fa-download"></i>
-                    </a>
-                  ` : ''}
-                </div>
-                <a class="text-xs text-instagram-400 hover:text-instagram-700 shrink-0" href="https://creativecommons.org/licenses/by-sa/4.0/deed.es" target="_blank" rel="noopener noreferrer">CC BY-SA 4.0</a>
-              </div>`;
+            <div class="photo-details">
+              ${descriptionMarkup}
+              <p class="photo-list-meta">
+                <span class="photo-list-date" data-original-date="${safeDate}">${dateFormatted}</span>
+                <span class="photo-list-separator" aria-hidden="true">·</span>
+                <a class="photo-provenance" href="${safeTelegramUrl}" target="_blank" rel="noopener noreferrer" title="Ver mensaje original en Telegram">Compartida por <span>${safeAuthor}</span></a>
+              </p>
+            </div>`;
           
           item.innerHTML = DOMPurify.sanitize(fullCardHtml, { ADD_ATTR: ['data-tag', 'target', 'rel'] });
 
@@ -1347,48 +1389,6 @@ function shareTagCollection() {
     navigator.clipboard.writeText(shareText + url).then(() => {
       alert('URL copiada al portapapeles');
     }).catch(console.error);
-  }
-}
-
-// Upload dialog functionality
-const uploadDialog = document.getElementById('uploadDialog');
-const uploadPhotoBtns = document.getElementsByClassName('uploadPhotoBtn'); // Renombrado a plural para claridad
-const closeUploadDialog = document.getElementById('closeUploadDialog');
-
-// Solo si existe el diálogo de subida
-if (uploadDialog) {
-  // Iterar sobre todos los botones con la clase 'uploadPhotoBtn'
-  for (let i = 0; i < uploadPhotoBtns.length; i++) {
-    uploadPhotoBtns[i].addEventListener('click', (e) => {
-      e.preventDefault();
-      uploadDialog.classList.remove('hidden');
-      uploadDialog.classList.add('flex');
-    });
-  }
-
-  // Listener para cerrar con el botón de cerrar
-  if (closeUploadDialog) {
-    closeUploadDialog.addEventListener('click', () => {
-      uploadDialog.classList.add('hidden');
-      uploadDialog.classList.remove('flex');
-    });
-  }
-
-  // Añadir funcionalidad para cerrar el diálogo haciendo clic fuera de él
-  uploadDialog.addEventListener('click', (e) => {
-    // Si el clic fue directamente sobre el fondo del diálogo (no en sus hijos)
-    if (e.target === uploadDialog) {
-      uploadDialog.classList.add('hidden');
-      uploadDialog.classList.remove('flex');
-    }
-  });
-
-  // Evitar que el clic dentro del contenido del diálogo lo cierre
-  const uploadDialogContent = uploadDialog.querySelector('div'); // Asumiendo que el contenido está en un div
-  if (uploadDialogContent) {
-    uploadDialogContent.addEventListener('click', (e) => {
-      e.stopPropagation(); // Detiene la propagación del evento al contenedor padre (uploadDialog)
-    });
   }
 }
 
@@ -1732,13 +1732,6 @@ async function loadElements() {
 // Ejecutar solo en la página correcta cuando el DOM esté listo
 
 document.addEventListener('DOMContentLoaded', function () {
-  // Scroll suave al top al hacer click en el h1
-  var scrollTitle = document.getElementById('scrollTopTitle');
-  if (scrollTitle) {
-    scrollTitle.addEventListener('click', function () {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    });
-  }
   if (document.getElementById('tags-list')) {
     loadTags();
   }
