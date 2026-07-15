@@ -468,7 +468,7 @@ contenido?.addEventListener('click', event => {
 });
 
 // Open lightbox with photo details
-function openLightbox(imgSrc, data, { updateHistory = true } = {}) {
+function openLightbox(imgSrc, data, { updateHistory = true, skipImageUpdate = false } = {}) {
   // Obtener filename y telegramId para la URL canónica y Telegram
   const filename = data.path?.split('/').pop() || '';
   const telegramId = filename.replace('.jpg', '').replace('.png', '').replace('.jpeg', '');
@@ -542,25 +542,14 @@ function openLightbox(imgSrc, data, { updateHistory = true } = {}) {
   }
   // Get all visible photos for navigation
   visiblePhotos = Array.from(document.querySelectorAll('.photo-card:not(.hidden)')).map(card => {
-    // Check if the photo is appropriate
     const isAppropriate = !card.querySelector('[data-inappropriate="true"]');
-    const imgElement = card.querySelector('img');
-    
-    return {
-      path: isAppropriate && imgElement ? imgElement.dataset.src : '',
-      data: {
-        description: card.dataset.description,
-        ai_description: imgElement ? imgElement.alt : '',
-        author: card.querySelector('.font-medium a')?.textContent?.trim() || card.querySelector('.font-medium')?.textContent?.trim(),
-        date: card.querySelector('.text-xs')?.dataset?.originalDate,
-        path: isAppropriate && imgElement ? imgElement.dataset.src : '',
-        is_appropriate: isAppropriate
-      }
-    };
-  }).filter(photo => photo.data !== null);
+    if (!isAppropriate || !card._photoPath || !card._photoData) return null;
+    return { path: card._photoPath, data: card._photoData };
+  }).filter(Boolean);
   
   // Find current photo index
   currentPhotoIndex = visiblePhotos.findIndex(photo => photo.path === imgSrc);
+  window.galleryLightboxMotion?.preloadAdjacent(visiblePhotos, currentPhotoIndex, photo => photo.path);
   
   // Update navigation buttons
   updateNavigationButtons();
@@ -568,8 +557,10 @@ function openLightbox(imgSrc, data, { updateHistory = true } = {}) {
   // Only proceed with lightbox
   const lightboxContent = document.querySelector('.lightbox-content');
   if (data.is_appropriate !== 0) {
-    lightboxImg.src = imgSrc;
-    lightboxImg.alt = data.ai_description || data.description || '';
+    if (!skipImageUpdate) {
+      lightboxImg.src = imgSrc;
+      lightboxImg.alt = data.ai_description || data.description || '';
+    }
     lightboxImg.style.display = 'block';
     document.querySelector('.inappropriate-content')?.remove();
   } else {
@@ -703,37 +694,30 @@ function updateNavigationButtons() {
   nextButton.classList.toggle('hidden', currentPhotoIndex >= visiblePhotos.length - 1);
 }
 
-function transitionToPhoto(direction, updatePhoto) {
-  if (isLightboxSliding || typeof updatePhoto !== 'function') return;
-  if (!lightboxImg || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    updatePhoto();
+async function transitionToPhoto(direction, photo) {
+  if (isLightboxSliding || !photo || !lightboxImg) return;
+  const motion = window.galleryLightboxMotion;
+  if (!motion) {
+    openLightbox(photo.path, photo.data);
     return;
   }
 
   isLightboxSliding = true;
   lightbox?.classList.add('is-sliding');
-  const outClass = direction > 0 ? 'lightbox-slide-out-left' : 'lightbox-slide-out-right';
-  const inClass = direction > 0 ? 'lightbox-slide-in-right' : 'lightbox-slide-in-left';
-  lightboxImg.classList.add(outClass);
-
-  window.setTimeout(() => {
-    if (!lightbox?.classList.contains('active')) {
-      lightboxImg.classList.remove(outClass);
-      lightbox.classList.remove('is-sliding');
-      isLightboxSliding = false;
-      return;
-    }
-
-    updatePhoto();
-    lightboxImg.classList.remove(outClass);
-    lightboxImg.classList.add(inClass);
-
-    window.setTimeout(() => {
-      lightboxImg.classList.remove(inClass);
-      lightbox?.classList.remove('is-sliding');
-      isLightboxSliding = false;
-    }, 220);
-  }, 120);
+  try {
+    await motion.transition({
+      stage: lightboxImg.parentElement,
+      image: lightboxImg,
+      src: photo.path,
+      alt: photo.data.ai_description || photo.data.description || '',
+      direction,
+      isActive: () => lightbox?.classList.contains('active'),
+      onCommit: () => openLightbox(photo.path, photo.data, { skipImageUpdate: true })
+    });
+  } finally {
+    lightbox?.classList.remove('is-sliding');
+    isLightboxSliding = false;
+  }
 }
 
 // Navigate to previous photo
@@ -741,10 +725,7 @@ function showPrevPhoto() {
   if (currentPhotoIndex > 0) {
     const nextIndex = currentPhotoIndex - 1;
     const photo = visiblePhotos[nextIndex];
-    transitionToPhoto(-1, () => {
-      currentPhotoIndex = nextIndex;
-      openLightbox(photo.path, photo.data);
-    });
+    transitionToPhoto(-1, photo);
   }
 }
 
@@ -753,10 +734,7 @@ function showNextPhoto() {
   if (currentPhotoIndex < visiblePhotos.length - 1) {
     const nextIndex = currentPhotoIndex + 1;
     const photo = visiblePhotos[nextIndex];
-    transitionToPhoto(1, () => {
-      currentPhotoIndex = nextIndex;
-      openLightbox(photo.path, photo.data);
-    });
+    transitionToPhoto(1, photo);
   }
 }
 
@@ -794,20 +772,11 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-// Handle touch gestures for navigation
-let startX;
-let startY;
-let isDragging = false;
-const MIN_SWIPE_DISTANCE = 50;
-
 ifLightbox(() => {
-  lightbox.addEventListener('touchstart', (e) => {
-    // Solo registramos el inicio del toque si es un solo dedo
-    if (e.touches.length === 1) {
-      startY = e.touches[0].clientY;
-      startX = e.touches[0].clientX;
-      isDragging = true;
-    }
+  window.galleryLightboxMotion?.addSwipe(lightboxImg?.parentElement, {
+    onPrevious: showPrevPhoto,
+    onNext: showNextPhoto,
+    canNavigate: () => lightbox.classList.contains('active') && !isLightboxSliding
   });
 });
 
@@ -1251,50 +1220,6 @@ if (searchParam) {
     safeSetContenido('<div class=\"text-center py-20 text-instagram-500\">Error al cargar la galería</div>');
   }
 })();
-
-// Handle lightbox gestures
-ifLightbox(() => {
-  lightbox.addEventListener('touchstart', (e) => {
-    // Solo registramos el inicio del toque si es un solo dedo
-    if (e.touches.length === 1) {
-      startY = e.touches[0].clientY;
-      startX = e.touches[0].clientX;
-      isDragging = true;
-    }
-  });
-  lightbox.addEventListener('touchmove', (e) => {
-    // Solo manejamos el gesto de deslizar si es un solo dedo
-    if (e.touches.length === 1 && isDragging) {
-      const currentX = e.touches[0].clientX;
-      const currentY = e.touches[0].clientY;
-      const diffX = currentX - startX;
-      const diffY = currentY - startY;
-      
-      if (Math.abs(diffX) > Math.abs(diffY)) {
-        // Navegación horizontal
-        if (Math.abs(diffX) > MIN_SWIPE_DISTANCE) {
-          if (diffX > 0 && currentPhotoIndex > 0) {
-            showPrevPhoto();
-            isDragging = false;
-          } else if (diffX < 0 && currentPhotoIndex < visiblePhotos.length - 1) {
-            showNextPhoto();
-            isDragging = false;
-          }
-        }
-      } else if (Math.abs(diffY) > MIN_SWIPE_DISTANCE) {
-        // Cerrar solo con deslizamiento vertical
-        closeLightbox();
-        isDragging = false;
-      }
-    }
-  });
-  lightbox.addEventListener('touchend', () => {
-    isDragging = false;
-  });
-  lightbox.addEventListener('click', (e) => {
-    if (e.target === lightbox) closeLightbox();
-  });
-});
 
 // Handle browser back/forward
 window.addEventListener('popstate', () => {

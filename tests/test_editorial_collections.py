@@ -54,13 +54,36 @@ class EditorialCollectionsTest(unittest.TestCase):
     def test_editorial_viewer_preloads_neighbors_and_slides_without_fading(self):
         detail = (PROJECT_ROOT / "miradas" / "arte-en-los-muros" / "index.html").read_text(encoding="utf-8")
         script = (PROJECT_ROOT / "js" / "miradas.js").read_text(encoding="utf-8")
+        motion = (PROJECT_ROOT / "js" / "lightbox-motion.js").read_text(encoding="utf-8")
         styles = (PROJECT_ROOT / "css" / "style.css").read_text(encoding="utf-8")
         self.assertIn('id="editorialLightboxMedia"', detail)
-        self.assertIn("preloadAdjacentPhotos(index)", script)
-        self.assertIn("image.decode()", script)
+        self.assertIn("galleryLightboxMotion?.preloadAdjacent", script)
+        self.assertIn("galleryLightboxMotion?.addSwipe", script)
+        self.assertIn("image.decode()", motion)
+        self.assertIn("pointerup", motion)
         self.assertIn("is-incoming-next", styles)
         self.assertIn("is-outgoing-previous", styles)
         self.assertNotIn("from { opacity: 0.45", styles)
+
+    def test_all_gallery_lightboxes_share_motion_and_swipe(self):
+        for page in (
+            PROJECT_ROOT / "index.html",
+            PROJECT_ROOT / "populares" / "index.html",
+            PROJECT_ROOT / "miradas" / "index.html",
+        ):
+            content = page.read_text(encoding="utf-8")
+            self.assertIn("lightbox-motion.js", content)
+            self.assertIn("lightbox-motion-stage", content)
+            self.assertIn("lightbox-motion-image", content)
+
+        for script_path in (
+            PROJECT_ROOT / "js" / "script.js",
+            PROJECT_ROOT / "js" / "populares.js",
+            PROJECT_ROOT / "js" / "miradas.js",
+        ):
+            content = script_path.read_text(encoding="utf-8")
+            self.assertIn("galleryLightboxMotion", content)
+            self.assertIn("addSwipe", content)
 
     def test_overview_has_complete_social_preview_metadata(self):
         overview = (PROJECT_ROOT / "miradas" / "index.html").read_text(encoding="utf-8")

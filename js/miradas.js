@@ -10,7 +10,6 @@
     returnUrl: null,
     returnScrollY: 0,
     socialRequestId: 0,
-    imagePreloads: new Map(),
     isTransitioning: false,
     transitionToken: 0
   };
@@ -171,64 +170,11 @@
     return new Date(value).toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' });
   }
 
-  function preloadPhoto(photo) {
-    if (!photo) return Promise.resolve(false);
-    const src = photoPath(photo);
-    if (state.imagePreloads.has(src)) return state.imagePreloads.get(src);
-
-    const promise = new Promise(resolve => {
-      const image = new Image();
-      let settled = false;
-      const finish = success => {
-        if (settled) return;
-        settled = true;
-        resolve(success);
-      };
-      const finishLoadedImage = () => {
-        if (typeof image.decode === 'function') {
-          image.decode().catch(() => {}).finally(() => finish(true));
-        } else {
-          finish(true);
-        }
-      };
-      image.onload = finishLoadedImage;
-      image.onerror = () => finish(false);
-      image.src = src;
-      if (image.complete) {
-        if (image.naturalWidth > 0) finishLoadedImage();
-        else finish(false);
-      }
-    });
-    state.imagePreloads.set(src, promise);
-    return promise;
-  }
-
-  function preloadAdjacentPhotos(index) {
-    [index - 1, index + 1].forEach(adjacentIndex => {
-      const photo = state.activePhotos[adjacentIndex];
-      if (photo) void preloadPhoto(photo);
-    });
-  }
-
   function setLightboxNavigation(index, locked = false) {
     const previous = document.getElementById('editorialPreviousPhoto');
     const next = document.getElementById('editorialNextPhoto');
     if (previous) previous.disabled = locked || index <= 0;
     if (next) next.disabled = locked || index >= state.activePhotos.length - 1;
-  }
-
-  function waitForSlide(image) {
-    return new Promise(resolve => {
-      let settled = false;
-      const finish = () => {
-        if (settled) return;
-        settled = true;
-        image.removeEventListener('animationend', finish);
-        resolve();
-      };
-      image.addEventListener('animationend', finish, { once: true });
-      window.setTimeout(finish, 340);
-    });
   }
 
   function closeCommentsPanel() {
@@ -298,12 +244,10 @@
     const token = ++state.transitionToken;
     state.isTransitioning = true;
     setLightboxNavigation(state.currentPhotoIndex, true);
-    const imageReady = await preloadPhoto(photo);
-    if (token !== state.transitionToken || lightbox.hidden) return;
 
     closeCommentsPanel();
     state.currentPhotoIndex = index;
-    preloadAdjacentPhotos(index);
+    window.galleryLightboxMotion?.preloadAdjacent(state.activePhotos, index, photoPath);
     const id = photoId(photo);
     const src = photoPath(photo);
     const alt = photo.ai_description || photo.description || '';
@@ -318,24 +262,19 @@
     window.history.replaceState({ editorialLightbox: true, photoId: id }, '', `/f/${encodeURIComponent(id)}/`);
     updateSocialActions(photo);
 
-    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (!direction || reduceMotion || !imageReady || !currentImage.src) {
+    const motion = window.galleryLightboxMotion;
+    if (!motion) {
       currentImage.src = src;
       currentImage.alt = alt;
     } else {
-      const movement = direction > 0 ? 'next' : 'previous';
-      const incomingImage = document.createElement('img');
-      incomingImage.id = 'editorialLightboxImage';
-      incomingImage.className = `editorial-lightbox-image is-incoming-${movement}`;
-      incomingImage.src = src;
-      incomingImage.alt = alt;
-      currentImage.removeAttribute('id');
-      currentImage.classList.add(`is-outgoing-${movement}`);
-      media.appendChild(incomingImage);
-      await waitForSlide(incomingImage);
-      if (token !== state.transitionToken) return;
-      currentImage.remove();
-      incomingImage.classList.remove(`is-incoming-${movement}`);
+      await motion.transition({
+        stage: media,
+        image: currentImage,
+        src,
+        alt,
+        direction,
+        isActive: () => token === state.transitionToken && !lightbox.hidden
+      });
     }
 
     if (token !== state.transitionToken) return;
@@ -433,6 +372,11 @@
     document.querySelectorAll('[data-editorial-close]').forEach(control => control.addEventListener('click', () => closeLightbox()));
     document.getElementById('editorialPreviousPhoto')?.addEventListener('click', () => renderLightboxPhoto(state.currentPhotoIndex - 1, -1));
     document.getElementById('editorialNextPhoto')?.addEventListener('click', () => renderLightboxPhoto(state.currentPhotoIndex + 1, 1));
+    window.galleryLightboxMotion?.addSwipe(document.getElementById('editorialLightboxMedia'), {
+      onPrevious: () => renderLightboxPhoto(state.currentPhotoIndex - 1, -1),
+      onNext: () => renderLightboxPhoto(state.currentPhotoIndex + 1, 1),
+      canNavigate: () => !state.isTransitioning && !document.getElementById('editorialLightbox')?.hidden
+    });
     document.getElementById('editorialLightboxShare')?.addEventListener('click', shareCurrentPhoto);
     document.getElementById('editorialLightboxComments')?.addEventListener('click', openCommentsPanel);
     document.getElementById('close-bluesky-comments')?.addEventListener('click', closeCommentsPanel);

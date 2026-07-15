@@ -366,7 +366,7 @@ function getPopularPhotoId(photo) {
   return photo.path.replace(/\.(?:jpe?g|png)$/i, '');
 }
 
-function openPopularLightbox(photo, { updateHistory = true } = {}) {
+function openPopularLightbox(photo, { updateHistory = true, skipImageUpdate = false } = {}) {
   const lightbox = document.getElementById('lightbox');
   const image = document.getElementById('lightbox-img');
   if (!lightbox || !image || !photo) return;
@@ -380,9 +380,16 @@ function openPopularLightbox(photo, { updateHistory = true } = {}) {
   currentPopularPhoto = photo;
   visiblePhotos = [...filteredPhotos];
   currentPhotoIndex = visiblePhotos.findIndex(item => getPopularPhotoId(item) === photoId);
+  window.galleryLightboxMotion?.preloadAdjacent(
+    visiblePhotos,
+    currentPhotoIndex,
+    item => `/files/${item.path}`
+  );
 
-  image.src = fullPath;
-  image.alt = photo.ai_description || photo.description || '';
+  if (!skipImageUpdate) {
+    image.src = fullPath;
+    image.alt = photo.ai_description || photo.description || '';
+  }
 
   const description = document.getElementById('lightbox-desc');
   if (description) {
@@ -513,49 +520,39 @@ function closePopularCommentsPanel() {
   panelInner.classList.add('translate-y-full', 'opacity-0');
 }
 
-function transitionToPopularPhoto(direction, updatePhoto) {
-  if (isPopularLightboxSliding || typeof updatePhoto !== 'function') return;
+async function transitionToPopularPhoto(direction, photo) {
+  if (isPopularLightboxSliding || !photo) return;
   const lightbox = document.getElementById('lightbox');
   const image = document.getElementById('lightbox-img');
-  if (!image || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    updatePhoto();
+  const motion = window.galleryLightboxMotion;
+  if (!image || !motion) {
+    openPopularLightbox(photo);
     return;
   }
 
   isPopularLightboxSliding = true;
   lightbox?.classList.add('is-sliding');
-  const outClass = direction > 0 ? 'lightbox-slide-out-left' : 'lightbox-slide-out-right';
-  const inClass = direction > 0 ? 'lightbox-slide-in-right' : 'lightbox-slide-in-left';
-  image.classList.add(outClass);
-
-  window.setTimeout(() => {
-    if (!lightbox?.classList.contains('active')) {
-      image.classList.remove(outClass);
-      lightbox?.classList.remove('is-sliding');
-      isPopularLightboxSliding = false;
-      return;
-    }
-
-    updatePhoto();
-    image.classList.remove(outClass);
-    image.classList.add(inClass);
-
-    window.setTimeout(() => {
-      image.classList.remove(inClass);
-      lightbox?.classList.remove('is-sliding');
-      isPopularLightboxSliding = false;
-    }, 220);
-  }, 120);
+  try {
+    await motion.transition({
+      stage: image.parentElement,
+      image,
+      src: `/files/${photo.path}`,
+      alt: photo.ai_description || photo.description || '',
+      direction,
+      isActive: () => lightbox?.classList.contains('active'),
+      onCommit: () => openPopularLightbox(photo, { skipImageUpdate: true })
+    });
+  } finally {
+    lightbox?.classList.remove('is-sliding');
+    isPopularLightboxSliding = false;
+  }
 }
 
 function showAdjacentPopularPhoto(direction) {
   const nextIndex = currentPhotoIndex + direction;
   if (nextIndex < 0 || nextIndex >= visiblePhotos.length) return;
   const photo = visiblePhotos[nextIndex];
-  transitionToPopularPhoto(direction, () => {
-    currentPhotoIndex = nextIndex;
-    openPopularLightbox(photo);
-  });
+  transitionToPopularPhoto(direction, photo);
 }
 
 function setupLazyLoading() {
@@ -699,6 +696,11 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('nextPhoto')?.addEventListener('click', event => {
     event.stopPropagation();
     showAdjacentPopularPhoto(1);
+  });
+  window.galleryLightboxMotion?.addSwipe(document.getElementById('lightbox-img')?.parentElement, {
+    onPrevious: () => showAdjacentPopularPhoto(-1),
+    onNext: () => showAdjacentPopularPhoto(1),
+    canNavigate: () => document.getElementById('lightbox')?.classList.contains('active') && !isPopularLightboxSliding
   });
   document.addEventListener('keydown', event => {
     if (event.key === 'Escape') {
