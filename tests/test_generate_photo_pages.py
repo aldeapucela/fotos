@@ -88,6 +88,8 @@ class StaticPhotoPagesTest(unittest.TestCase):
         self.assertIn("window.scrollTo({ top: 0", shell)
         self.assertIn(".back-to-top", styles)
         self.assertIn("env(safe-area-inset-bottom)", styles)
+        self.assertIn("background: transparent;", styles)
+        self.assertIn("transform: translateY(-2px);", styles)
 
     def test_newsletter_cta_is_value_led_and_available_in_generated_pages(self):
         page = (PROJECT_ROOT / "f" / "184500" / "index.html").read_text(encoding="utf-8")
