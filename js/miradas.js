@@ -9,7 +9,10 @@
     currentPhotoIndex: -1,
     returnUrl: null,
     returnScrollY: 0,
-    socialRequestId: 0
+    socialRequestId: 0,
+    imagePreloads: new Map(),
+    isTransitioning: false,
+    transitionToken: 0
   };
 
   const normalize = value => String(value || '')
@@ -168,6 +171,66 @@
     return new Date(value).toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' });
   }
 
+  function preloadPhoto(photo) {
+    if (!photo) return Promise.resolve(false);
+    const src = photoPath(photo);
+    if (state.imagePreloads.has(src)) return state.imagePreloads.get(src);
+
+    const promise = new Promise(resolve => {
+      const image = new Image();
+      let settled = false;
+      const finish = success => {
+        if (settled) return;
+        settled = true;
+        resolve(success);
+      };
+      const finishLoadedImage = () => {
+        if (typeof image.decode === 'function') {
+          image.decode().catch(() => {}).finally(() => finish(true));
+        } else {
+          finish(true);
+        }
+      };
+      image.onload = finishLoadedImage;
+      image.onerror = () => finish(false);
+      image.src = src;
+      if (image.complete) {
+        if (image.naturalWidth > 0) finishLoadedImage();
+        else finish(false);
+      }
+    });
+    state.imagePreloads.set(src, promise);
+    return promise;
+  }
+
+  function preloadAdjacentPhotos(index) {
+    [index - 1, index + 1].forEach(adjacentIndex => {
+      const photo = state.activePhotos[adjacentIndex];
+      if (photo) void preloadPhoto(photo);
+    });
+  }
+
+  function setLightboxNavigation(index, locked = false) {
+    const previous = document.getElementById('editorialPreviousPhoto');
+    const next = document.getElementById('editorialNextPhoto');
+    if (previous) previous.disabled = locked || index <= 0;
+    if (next) next.disabled = locked || index >= state.activePhotos.length - 1;
+  }
+
+  function waitForSlide(image) {
+    return new Promise(resolve => {
+      let settled = false;
+      const finish = () => {
+        if (settled) return;
+        settled = true;
+        image.removeEventListener('animationend', finish);
+        resolve();
+      };
+      image.addEventListener('animationend', finish, { once: true });
+      window.setTimeout(finish, 340);
+    });
+  }
+
   function closeCommentsPanel() {
     const panel = document.getElementById('bluesky-comments-panel');
     const panelInner = document.getElementById('bluesky-comments-panel-inner');
@@ -224,20 +287,26 @@
     commentsCount.hidden = commentCount <= 0;
   }
 
-  function renderLightboxPhoto(index, direction = 0) {
+  async function renderLightboxPhoto(index, direction = 0) {
     const photo = state.activePhotos[index];
-    if (!photo) return;
+    if (!photo || state.isTransitioning) return;
+    const lightbox = document.getElementById('editorialLightbox');
+    const media = document.getElementById('editorialLightboxMedia');
+    const currentImage = document.getElementById('editorialLightboxImage');
+    if (!lightbox || !media || !currentImage) return;
+
+    const token = ++state.transitionToken;
+    state.isTransitioning = true;
+    setLightboxNavigation(state.currentPhotoIndex, true);
+    const imageReady = await preloadPhoto(photo);
+    if (token !== state.transitionToken || lightbox.hidden) return;
+
     closeCommentsPanel();
     state.currentPhotoIndex = index;
-    const panel = document.querySelector('.editorial-lightbox-panel');
-    panel?.classList.remove('slide-from-left', 'slide-from-right');
-    if (direction) {
-      void panel?.offsetWidth;
-      panel?.classList.add(direction > 0 ? 'slide-from-right' : 'slide-from-left');
-    }
+    preloadAdjacentPhotos(index);
     const id = photoId(photo);
-    document.getElementById('editorialLightboxImage').src = photoPath(photo);
-    document.getElementById('editorialLightboxImage').alt = photo.ai_description || photo.description || '';
+    const src = photoPath(photo);
+    const alt = photo.ai_description || photo.description || '';
     const description = document.getElementById('editorialLightboxDescription');
     description.textContent = photo.description || '';
     description.hidden = !photo.description;
@@ -246,10 +315,32 @@
     author.href = `https://t.me/AldeaPucela/27202/${encodeURIComponent(id)}`;
     author.querySelector('span').textContent = `Compartida por ${photo.author || 'Anónimo'}`;
     document.getElementById('editorialLightboxDownload').href = photoPath(photo);
-    document.getElementById('editorialPreviousPhoto').disabled = index <= 0;
-    document.getElementById('editorialNextPhoto').disabled = index >= state.activePhotos.length - 1;
     window.history.replaceState({ editorialLightbox: true, photoId: id }, '', `/f/${encodeURIComponent(id)}/`);
     updateSocialActions(photo);
+
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!direction || reduceMotion || !imageReady || !currentImage.src) {
+      currentImage.src = src;
+      currentImage.alt = alt;
+    } else {
+      const movement = direction > 0 ? 'next' : 'previous';
+      const incomingImage = document.createElement('img');
+      incomingImage.id = 'editorialLightboxImage';
+      incomingImage.className = `editorial-lightbox-image is-incoming-${movement}`;
+      incomingImage.src = src;
+      incomingImage.alt = alt;
+      currentImage.removeAttribute('id');
+      currentImage.classList.add(`is-outgoing-${movement}`);
+      media.appendChild(incomingImage);
+      await waitForSlide(incomingImage);
+      if (token !== state.transitionToken) return;
+      currentImage.remove();
+      incomingImage.classList.remove(`is-incoming-${movement}`);
+    }
+
+    if (token !== state.transitionToken) return;
+    state.isTransitioning = false;
+    setLightboxNavigation(index);
   }
 
   function openLightbox(index) {
@@ -271,6 +362,8 @@
     if (!lightbox || lightbox.hidden) return;
     const returnUrl = state.returnUrl || collectionHref(state.activeCollection);
     const returnScrollY = state.returnScrollY;
+    state.transitionToken += 1;
+    state.isTransitioning = false;
     state.socialRequestId += 1;
     closeCommentsPanel();
     lightbox.classList.remove('is-open');
@@ -278,7 +371,14 @@
     if (updateHistory) window.history.replaceState({}, '', returnUrl);
     window.setTimeout(() => {
       lightbox.hidden = true;
-      document.getElementById('editorialLightboxImage').src = '';
+      const currentImage = document.getElementById('editorialLightboxImage');
+      document.querySelectorAll('.editorial-lightbox-image').forEach(image => {
+        if (image !== currentImage) image.remove();
+      });
+      if (currentImage) {
+        currentImage.className = 'editorial-lightbox-image';
+        currentImage.src = '';
+      }
       window.requestAnimationFrame(() => window.scrollTo({ top: returnScrollY, behavior: 'auto' }));
     }, 180);
   }

@@ -33,7 +33,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" crossorigin="anonymous" referrerpolicy="no-referrer">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="/js/tailwind-config.js"></script>
-  <link rel="stylesheet" href="/css/style.css?202607160330">
+  <link rel="stylesheet" href="/css/style.css?202607160600">
 </head>
 <body class="gallery-page editorial-page font-sans" data-collection-slug="">
   <header class="gallery-header sticky top-0 z-40">
@@ -163,7 +163,9 @@
     <div class="editorial-lightbox-panel">
       <button class="editorial-lightbox-close" type="button" data-editorial-close aria-label="Cerrar foto"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
       <button id="editorialPreviousPhoto" class="editorial-lightbox-nav editorial-lightbox-prev" type="button" aria-label="Foto anterior"><i class="fa-solid fa-chevron-left" aria-hidden="true"></i></button>
-      <img id="editorialLightboxImage" src="" alt="">
+      <div id="editorialLightboxMedia" class="editorial-lightbox-media">
+        <img id="editorialLightboxImage" class="editorial-lightbox-image" src="" alt="">
+      </div>
       <button id="editorialNextPhoto" class="editorial-lightbox-nav editorial-lightbox-next" type="button" aria-label="Foto siguiente"><i class="fa-solid fa-chevron-right" aria-hidden="true"></i></button>
       <div class="editorial-lightbox-info">
         <div class="editorial-lightbox-toolbar">
@@ -198,8 +200,8 @@
 
   <script src="/js/database-manager.js?202508101142"></script>
   <script src="/js/bluesky-comments.js?202607141900"></script>
-  <script src="/js/gallery-shell.js?202607160125"></script>
-  <script src="/js/miradas.js?202607160300"></script>
+  <script src="/js/gallery-shell.js?202607160500"></script>
+  <script src="/js/miradas.js?202607160600"></script>
   <script src="/js/matomo.js"></script>
 </body>
 </html>

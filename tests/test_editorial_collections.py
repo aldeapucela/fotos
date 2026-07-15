@@ -51,6 +51,17 @@ class EditorialCollectionsTest(unittest.TestCase):
         self.assertIn("CC BY-SA 4.0", detail)
         self.assertNotIn("Ver ficha y comentarios", detail)
 
+    def test_editorial_viewer_preloads_neighbors_and_slides_without_fading(self):
+        detail = (PROJECT_ROOT / "miradas" / "arte-en-los-muros" / "index.html").read_text(encoding="utf-8")
+        script = (PROJECT_ROOT / "js" / "miradas.js").read_text(encoding="utf-8")
+        styles = (PROJECT_ROOT / "css" / "style.css").read_text(encoding="utf-8")
+        self.assertIn('id="editorialLightboxMedia"', detail)
+        self.assertIn("preloadAdjacentPhotos(index)", script)
+        self.assertIn("image.decode()", script)
+        self.assertIn("is-incoming-next", styles)
+        self.assertIn("is-outgoing-previous", styles)
+        self.assertNotIn("from { opacity: 0.45", styles)
+
     def test_overview_has_complete_social_preview_metadata(self):
         overview = (PROJECT_ROOT / "miradas" / "index.html").read_text(encoding="utf-8")
         self.assertIn("https://fotos.aldeapucela.org/img/preview-miradas.jpg", overview)

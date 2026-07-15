@@ -64,8 +64,50 @@
     return Boolean(element && !element.hidden && (element.classList.contains('is-open') || element.classList.contains('flex')));
   }
 
+  function setupBackToTop() {
+    if (document.getElementById('backToTopButton')) return;
+
+    const button = document.createElement('button');
+    button.id = 'backToTopButton';
+    button.className = 'back-to-top';
+    button.type = 'button';
+    button.tabIndex = -1;
+    button.setAttribute('aria-label', 'Volver arriba');
+    button.setAttribute('title', 'Volver arriba');
+    button.setAttribute('aria-hidden', 'true');
+    button.innerHTML = '<i class="fa-solid fa-arrow-up" aria-hidden="true"></i>';
+    document.body.appendChild(button);
+
+    let updateQueued = false;
+    const updateVisibility = () => {
+      updateQueued = false;
+      const threshold = Math.max(560, window.innerHeight * 0.75);
+      const canScroll = document.documentElement.scrollHeight > window.innerHeight * 1.5;
+      const visible = canScroll && window.scrollY > threshold;
+      button.classList.toggle('is-visible', visible);
+      button.tabIndex = visible ? 0 : -1;
+      button.setAttribute('aria-hidden', String(!visible));
+    };
+    const queueVisibilityUpdate = () => {
+      if (updateQueued) return;
+      updateQueued = true;
+      window.requestAnimationFrame(updateVisibility);
+    };
+
+    button.addEventListener('click', () => {
+      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' });
+      window._paq = window._paq || [];
+      window._paq.push(['trackEvent', 'Navegación', 'Volver arriba']);
+    });
+    window.addEventListener('scroll', queueVisibilityUpdate, { passive: true });
+    window.addEventListener('resize', queueVisibilityUpdate);
+    updateVisibility();
+  }
+
   document.addEventListener('DOMContentLoaded', () => {
     setGalleryView(getStoredViewMode(), { persist: false });
+    setupBackToTop();
 
     document.querySelectorAll('#scrollTopBrand, #scrollTopTitle').forEach(control => {
       control.addEventListener('click', event => {

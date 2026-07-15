@@ -77,6 +77,16 @@ class StaticPhotoPagesTest(unittest.TestCase):
         self.assertIn('src="/js/gallery-shell.js', page)
         self.assertNotIn('<span id="totalPhotosCount">0</span>', page)
 
+    def test_gallery_shell_provides_accessible_back_to_top_control(self):
+        shell = (PROJECT_ROOT / "js" / "gallery-shell.js").read_text(encoding="utf-8")
+        styles = (PROJECT_ROOT / "css" / "style.css").read_text(encoding="utf-8")
+        self.assertIn("backToTopButton", shell)
+        self.assertIn("Volver arriba", shell)
+        self.assertIn("prefers-reduced-motion: reduce", shell)
+        self.assertIn("window.scrollTo({ top: 0", shell)
+        self.assertIn(".back-to-top", styles)
+        self.assertIn("env(safe-area-inset-bottom)", styles)
+
     def test_sitemap_contains_photo_url(self):
         sitemap = (PROJECT_ROOT / "sitemap.xml").read_text(encoding="utf-8")
         self.assertIn("https://fotos.aldeapucela.org/f/184500/", sitemap)
