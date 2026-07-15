@@ -85,6 +85,13 @@ class EditorialCollectionsTest(unittest.TestCase):
             self.assertIn("galleryLightboxMotion", content)
             self.assertIn("addSwipe", content)
 
+    def test_desktop_editorial_index_uses_a_compact_five_item_mosaic(self):
+        styles = (PROJECT_ROOT / "css" / "style.css").read_text(encoding="utf-8")
+        self.assertIn("grid-template-columns: repeat(14, minmax(0, 1fr))", styles)
+        self.assertIn("grid-auto-rows: clamp(190px, 15vw, 220px)", styles)
+        self.assertIn("grid-column: span 6", styles)
+        self.assertIn("grid-column: span 4", styles)
+
     def test_overview_has_complete_social_preview_metadata(self):
         overview = (PROJECT_ROOT / "miradas" / "index.html").read_text(encoding="utf-8")
         self.assertIn("https://fotos.aldeapucela.org/img/preview-miradas.jpg", overview)
