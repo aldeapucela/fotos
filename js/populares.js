@@ -55,12 +55,7 @@ function timeAgo(date) {
 }
 
 function formatDate(dateString) {
-  const date = new Date(dateString.replace(' ', 'T'));
-  return date.toLocaleDateString('es', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric'
-  });
+  return window.galleryLightboxMotion?.formatDate(dateString) || '';
 }
 
 function convertDescriptionToLinks(text, isLightbox = false) {
@@ -396,6 +391,10 @@ function openPopularLightbox(photo, { updateHistory = true, skipImageUpdate = fa
     description.innerHTML = DOMPurify.sanitize(convertDescriptionToLinks(photo.description || '', true), {
       ADD_ATTR: ['data-tag', 'target', 'rel']
     });
+    description.closest('.lightbox-info')?.classList.toggle(
+      'is-description-empty',
+      !String(photo.description || '').trim()
+    );
   }
 
   const author = document.getElementById('lightbox-autor');
@@ -700,6 +699,7 @@ document.addEventListener('DOMContentLoaded', () => {
   window.galleryLightboxMotion?.addSwipe(document.getElementById('lightbox-img')?.parentElement, {
     onPrevious: () => showAdjacentPopularPhoto(-1),
     onNext: () => showAdjacentPopularPhoto(1),
+    onDismiss: closePopularLightbox,
     canNavigate: () => document.getElementById('lightbox')?.classList.contains('active') && !isPopularLightboxSliding
   });
   document.addEventListener('keydown', event => {

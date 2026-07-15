@@ -46,6 +46,21 @@
     });
   }
 
+  function formatDate(value) {
+    if (!value) return '';
+    const normalized = typeof value === 'string' ? value.trim().replace(' ', 'T') : value;
+    const date = new Date(normalized);
+    if (Number.isNaN(date.getTime())) return '';
+    const parts = new Intl.DateTimeFormat('es-ES', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    }).formatToParts(date);
+    const part = type => parts.find(item => item.type === type)?.value || '';
+    const month = part('month').replace('.', '').toLocaleLowerCase('es-ES');
+    return `${part('day')} ${month} ${part('year')}`.trim();
+  }
+
   function waitForAnimation(image) {
     return new Promise(resolve => {
       let settled = false;
@@ -98,7 +113,7 @@
     return !isActive || isActive();
   }
 
-  function addSwipe(stage, { onPrevious, onNext, canNavigate = () => true, threshold = 52 } = {}) {
+  function addSwipe(stage, { onPrevious, onNext, onDismiss, canNavigate = () => true, threshold = 52 } = {}) {
     if (!stage) return () => {};
     let startX = 0;
     let startY = 0;
@@ -118,6 +133,10 @@
       tracking = false;
       const deltaX = event.clientX - startX;
       const deltaY = event.clientY - startY;
+      if (deltaY >= threshold && Math.abs(deltaY) > Math.abs(deltaX) * 1.15) {
+        onDismiss?.();
+        return;
+      }
       if (Math.abs(deltaX) < threshold || Math.abs(deltaX) <= Math.abs(deltaY) * 1.15) return;
       if (deltaX > 0) onPrevious?.();
       else onNext?.();
@@ -136,5 +155,5 @@
     };
   }
 
-  window.galleryLightboxMotion = { addSwipe, preload, preloadAdjacent, transition };
+  window.galleryLightboxMotion = { addSwipe, formatDate, preload, preloadAdjacent, transition };
 })();

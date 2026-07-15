@@ -578,6 +578,10 @@ function openLightbox(imgSrc, data, { updateHistory = true, skipImageUpdate = fa
   // Sanitize the description HTML before inserting it (pass true for isLightbox)
   const descriptionHtml = data.description ? convertHashtagsToLinks(data.description, true) : '';
   lightboxDesc.innerHTML = DOMPurify.sanitize(descriptionHtml, { ADD_ATTR: ['data-tag', 'target', 'rel'] }); // Allow link attributes
+  lightboxDesc.closest('.lightbox-info')?.classList.toggle(
+    'is-description-empty',
+    !String(data.description || '').trim()
+  );
 
   // Add delegated event listener for tag links within the lightbox description
   lightboxDesc.addEventListener('click', (e) => {
@@ -620,39 +624,7 @@ function openLightbox(imgSrc, data, { updateHistory = true, skipImageUpdate = fa
     downloadLink.style.display = 'none';
   }
   
-  // Parse and format date properly
-  let photoDate;
-  try {
-    // Handle ISO string format from SQLite
-    photoDate = new Date(data.date.replace(' ', 'T')); // Convert SQLite datetime to ISO format
-    if (isNaN(photoDate.getTime())) { // If still invalid, try parsing parts
-      const [datePart, timePart] = data.date.split(' ');
-      const [year, month, day] = datePart.split('-');
-      const [hour, minute, second] = (timePart || '00:00:00').split(':');
-      photoDate = new Date(year, month - 1, day, hour || 0, minute || 0, second || 0);
-    }
-  } catch (e) {
-    console.error('Error parsing date:', data.date);
-    photoDate = new Date(); // Fallback to current date if parsing fails
-  }
-
-  const formattedDate = window.innerWidth <= 640 
-    ? photoDate.toLocaleString('es', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      })
-    : photoDate.toLocaleDateString('es', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-  
-  lightboxFecha.textContent = formattedDate;
+  lightboxFecha.textContent = window.galleryLightboxMotion?.formatDate(data.date) || '';
   
   // Add license link safely
   lightboxLicense.innerHTML = ''; // Clear previous content
@@ -776,6 +748,7 @@ ifLightbox(() => {
   window.galleryLightboxMotion?.addSwipe(lightboxImg?.parentElement, {
     onPrevious: showPrevPhoto,
     onNext: showNextPhoto,
+    onDismiss: closeLightbox,
     canNavigate: () => lightbox.classList.contains('active') && !isLightboxSliding
   });
 });

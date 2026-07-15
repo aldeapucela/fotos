@@ -166,8 +166,7 @@
   }
 
   function formatDate(value) {
-    if (!value) return '';
-    return new Date(value).toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' });
+    return window.galleryLightboxMotion?.formatDate(value) || '';
   }
 
   function setLightboxNavigation(index, locked = false) {
@@ -253,7 +252,10 @@
     const alt = photo.ai_description || photo.description || '';
     const description = document.getElementById('editorialLightboxDescription');
     description.textContent = photo.description || '';
-    description.hidden = !photo.description;
+    description.closest('.editorial-lightbox-info')?.classList.toggle(
+      'is-description-empty',
+      !String(photo.description || '').trim()
+    );
     document.getElementById('editorialLightboxDate').textContent = formatDate(photo.date);
     const author = document.getElementById('editorialLightboxAuthor');
     author.href = `https://t.me/AldeaPucela/27202/${encodeURIComponent(id)}`;
@@ -375,6 +377,7 @@
     window.galleryLightboxMotion?.addSwipe(document.getElementById('editorialLightboxMedia'), {
       onPrevious: () => renderLightboxPhoto(state.currentPhotoIndex - 1, -1),
       onNext: () => renderLightboxPhoto(state.currentPhotoIndex + 1, 1),
+      onDismiss: closeLightbox,
       canNavigate: () => !state.isTransitioning && !document.getElementById('editorialLightbox')?.hidden
     });
     document.getElementById('editorialLightboxShare')?.addEventListener('click', shareCurrentPhoto);
