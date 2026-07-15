@@ -87,6 +87,33 @@ class StaticPhotoPagesTest(unittest.TestCase):
         self.assertIn(".back-to-top", styles)
         self.assertIn("env(safe-area-inset-bottom)", styles)
 
+    def test_newsletter_cta_is_value_led_and_available_in_generated_pages(self):
+        page = (PROJECT_ROOT / "f" / "184500" / "index.html").read_text(encoding="utf-8")
+        script = (PROJECT_ROOT / "js" / "newsletter-cta.js").read_text(encoding="utf-8")
+        styles = (PROJECT_ROOT / "css" / "style.css").read_text(encoding="utf-8")
+
+        self.assertIn('href="https://aldeapucela.org/boletin/"', page)
+        self.assertIn("Únete al boletín", page)
+        self.assertIn('src="/js/newsletter-cta.js', page)
+        self.assertIn("Nuevas fotos, una vez a la semana", script)
+        self.assertIn("debates, noticias y eventos", script)
+        self.assertIn("JOINED_STORAGE_KEY", script)
+        self.assertIn("localStorage.setItem", script)
+        self.assertIn("hasJoinedNewsletter()", script)
+        self.assertIn("INSERT_AFTER_PHOTOS = 30", script)
+        self.assertNotIn("suscri", script.lower())
+        self.assertIn(".newsletter-cta", styles)
+        self.assertIn("min-height: 48px", styles)
+
+    def test_every_gallery_template_links_the_weekly_newsletter(self):
+        for relative_path in ("index.html", "populares/index.html", "miradas/index.html"):
+            with self.subTest(template=relative_path):
+                page = (PROJECT_ROOT / relative_path).read_text(encoding="utf-8")
+                self.assertIn("https://aldeapucela.org/boletin/", page)
+                self.assertIn("Únete al boletín", page)
+                self.assertIn("Fotos y novedades cada semana", page)
+                self.assertIn("newsletter-cta.js", page)
+
     def test_sitemap_contains_photo_url(self):
         sitemap = (PROJECT_ROOT / "sitemap.xml").read_text(encoding="utf-8")
         self.assertIn("https://fotos.aldeapucela.org/f/184500/", sitemap)
