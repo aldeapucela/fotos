@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <g id="feather">
+      <path d="M0 0
+               C 8 -80 8 -150 12 -192
+               C 30 -232 48 -252 42 -288
+               C 36 -320 20 -338 0 -346
+               C -20 -338 -36 -320 -42 -288
+               C -48 -252 -30 -232 -12 -192
+               C -8 -150 -8 -80 0 0 Z" fill="#1E9E8A"/>
+      <ellipse cx="0" cy="-283" rx="34" ry="46" fill="#ffffff"/>
+      <ellipse cx="0" cy="-285" rx="20" ry="30" fill="#66517D"/>
+      <circle cx="-8" cy="-298" r="8" fill="#ffffff" opacity="0.85"/>
+    </g>
+  </defs>
+
+  <g transform="translate(512 520) scale(1.12) translate(-512 -500)">
+    <!-- Peacock tail fan -->
+    <use href="#feather" transform="translate(512 505) rotate(-52) scale(0.9)"/>
+    <use href="#feather" transform="translate(512 505) rotate(-26) scale(1.0)"/>
+    <use href="#feather" transform="translate(512 505) rotate(26) scale(1.0)"/>
+    <use href="#feather" transform="translate(512 505) rotate(52) scale(0.9)"/>
+    <use href="#feather" transform="translate(512 505) rotate(0) scale(1.08)"/>
+
+    <!-- Camera -->
+    <rect x="648" y="500" width="64" height="30" rx="13" fill="#66517D"/>
+    <rect x="418" y="458" width="188" height="90" rx="22" fill="#66517D"/>
+    <rect x="262" y="520" width="500" height="298" rx="56" fill="#66517D"/>
+
+    <!-- Flash window -->
+    <rect x="300" y="558" width="76" height="46" rx="14" fill="#1E9E8A"/>
+
+    <!-- Lens = peacock feather eye -->
+    <circle cx="512" cy="668" r="146" fill="#ffffff"/>
+    <circle cx="512" cy="668" r="130" fill="#1E9E8A"/>
+    <circle cx="512" cy="668" r="92" fill="#ffffff"/>
+    <circle cx="512" cy="668" r="64" fill="#66517D"/>
+    <circle cx="482" cy="634" r="22" fill="#ffffff" opacity="0.9"/>
+  </g>
+</svg>
