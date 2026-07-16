@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import argparse
 import sqlite3
 import requests
 import time
@@ -59,7 +60,7 @@ def get_bluesky_stats(post_id):
         print(f"❌ Error procesando datos del post {post_id}: {e}")
         return None
 
-def update_bluesky_cache():
+def update_bluesky_cache(force=False, photo=None, test_mode=False):
     """Actualizar el cache de estadísticas de Bluesky"""
     project_root = get_project_root()
     db_path = os.path.join(project_root, 'fotos.db')
@@ -73,18 +74,25 @@ def update_bluesky_cache():
         cursor = conn.cursor()
         
         # Obtener todos los posts de Bluesky con sus IDs de imagen
-        cursor.execute("""
+        query = """
             SELECT bp.image_id, bp.post_id, i.path, bic.last_updated
             FROM bluesky_posts bp
             JOIN imagenes i ON bp.image_id = i.id
             LEFT JOIN bluesky_interactions_cache bic ON bp.image_id = bic.image_id
+        """
+        params = []
+        if photo:
+            query += " WHERE i.path = ? OR i.path GLOB ?"
+            params = [photo, f"{photo}.*"]
+        query += """
             ORDER BY bp.image_id
-        """)
+        """
+        cursor.execute(query, params)
         
         posts = cursor.fetchall()
         
         # Limitar posts en modo de prueba
-        if globals().get('TEST_MODE', False):
+        if test_mode:
             posts = posts[:3]
             print("🧪 Modo de prueba activo - limitado a 3 posts")
         
@@ -92,6 +100,7 @@ def update_bluesky_cache():
         
         if total_posts == 0:
             print("ℹ️  No se encontraron posts de Bluesky para actualizar")
+            conn.close()
             return True
         
         print(f"🔄 Iniciando actualización de {total_posts} posts de Bluesky...")
@@ -106,7 +115,7 @@ def update_bluesky_cache():
             
             # Verificar si necesita actualización (más de 12 horas)
             needs_update = True
-            if last_updated:
+            if last_updated and not force:
                 try:
                     last_update_time = datetime.fromisoformat(last_updated.replace(' ', 'T'))
                     if datetime.now() - last_update_time < timedelta(hours=12):
@@ -212,22 +221,27 @@ def show_cache_stats():
 if __name__ == "__main__":
     print("🚀 Script de actualización de estadísticas de Bluesky")
     print("=" * 50)
-    
-    # Verificar argumentos
-    if len(sys.argv) > 1 and sys.argv[1] == "--stats":
+
+    parser = argparse.ArgumentParser(description="Actualiza la caché de interacciones de BlueSky")
+    parser.add_argument("--stats", action="store_true", help="muestra estadísticas sin sincronizar")
+    parser.add_argument("--test", action="store_true", help="procesa como máximo tres posts")
+    parser.add_argument("--force", action="store_true", help="ignora la caché de 12 horas y vuelve a consultar BlueSky")
+    parser.add_argument("--photo", metavar="ID_O_ARCHIVO", help="sincroniza sólo una foto, por ejemplo 186917 o 186917.jpg")
+    args = parser.parse_args()
+
+    if args.stats:
         show_cache_stats()
         sys.exit(0)
-    
-    # Modo de prueba limitada para desarrollo
-    if len(sys.argv) > 1 and sys.argv[1] == "--test":
+
+    if args.test:
         print("🧪 Modo de prueba: procesando solo los primeros 3 posts")
-        global TEST_MODE
-        TEST_MODE = True
-    else:
-        TEST_MODE = False
-    
+    if args.force:
+        print("🔁 Sincronización forzada: se ignorará la caché reciente")
+    if args.photo:
+        print(f"🎯 Limitando sincronización a la foto: {args.photo}")
+
     # Ejecutar actualización
-    success = update_bluesky_cache()
+    success = update_bluesky_cache(force=args.force, photo=args.photo, test_mode=args.test)
     
     # Mostrar estadísticas finales
     show_cache_stats()

@@ -178,6 +178,13 @@ python3 ./scripts/generate_editorial_collections.py
 ```
 - Obtiene métricas de interacción (likes, comentarios, reposts) desde Bluesky
 - Actualiza la tabla `bluesky_interactions_cache`
+- Conserva durante 12 horas las métricas recientes. Para ignorar esa caché o
+  actualizar una única foto:
+
+```bash
+python3 ./scripts/bluesky-sync.py --force
+python3 ./scripts/bluesky-sync.py --force --photo 186917
+```
 
 ### Corregir asociaciones con BlueSky
 
@@ -192,6 +199,8 @@ python3 ./scripts/reassign-bluesky-posts.py --apply
 El primer comando es una simulación. El segundo crea primero una copia de
 seguridad `fotos.db.before-bluesky-reassign.*` y actualiza sólo una asociación
 existente cuando el post de BlueSky enlaza inequívocamente a una foto distinta.
+También invalida las métricas de esas fotos para que el siguiente
+`bluesky-sync.py` consulte el post nuevo.
 - Necesario para la funcionalidad de fotos populares
 - Se recomienda ejecutar cada 30 minutos en un cron
 

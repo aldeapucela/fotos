@@ -125,6 +125,10 @@ def main() -> int:
             print("\nSimulación: no se ha modificado la base. Ejecuta de nuevo con --apply para confirmar.")
             return 0
 
+        if not changes:
+            print("\nNo hay reasignaciones que aplicar.")
+            return 0
+
         backup = DATABASE.with_name(f"fotos.db.before-bluesky-reassign.{datetime.now():%Y%m%d_%H%M%S}")
         shutil.copy2(DATABASE, backup)
         with connection:
@@ -132,7 +136,12 @@ def main() -> int:
                 "UPDATE bluesky_posts SET post_id = ? WHERE image_id = ?",
                 [(expected, image_id) for image_id, _, _, expected in changes],
             )
+            connection.executemany(
+                "DELETE FROM bluesky_interactions_cache WHERE image_id = ?",
+                [(image_id,) for image_id, _, _, _ in changes],
+            )
         print(f"\nAplicadas {len(changes)} reasignaciones.")
+        print(f"Invalidada la caché de esas {len(changes)} fotos para su próximo bluesky-sync.")
         print(f"Copia de seguridad: {backup.name}")
         return 0
     finally:
