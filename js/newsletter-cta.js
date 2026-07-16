@@ -10,6 +10,9 @@
   function track(action, placement) {
     window._paq = window._paq || [];
     window._paq.push(['trackEvent', 'Boletín', action, placement]);
+    if (placement === 'entre-recientes') {
+      window._paq.push(['trackEvent', 'Recorrido galería', action, 'boletin:foto-30']);
+    }
   }
 
   function hasJoinedNewsletter() {

@@ -118,6 +118,29 @@ class StaticPhotoPagesTest(unittest.TestCase):
                 self.assertIn("Fotos y novedades cada semana", page)
                 self.assertIn("newsletter-cta.js", page)
 
+    def test_recent_gallery_promotes_one_editorial_collection_after_sixty_photos(self):
+        page = (PROJECT_ROOT / "index.html").read_text(encoding="utf-8")
+        script = (PROJECT_ROOT / "js" / "editorial-promo.js").read_text(encoding="utf-8")
+        styles = (PROJECT_ROOT / "css" / "style.css").read_text(encoding="utf-8")
+
+        self.assertIn('src="/js/editorial-promo.js', page)
+        self.assertIn("MIRADAS_AFTER_PHOTOS = 60", script)
+        self.assertIn("POPULAR_AFTER_PHOTOS = 90", script)
+        self.assertIn("UPLOAD_AFTER_PHOTOS = 150", script)
+        self.assertIn("window.location.pathname === '/'", script)
+        self.assertIn("/data/editorial-collections.json", script)
+        self.assertIn("aldea-fotos:miradas-seen", script)
+        self.assertIn("Explorar esta mirada", script)
+        self.assertIn("Las fotos que están llamando la atención", script)
+        self.assertIn("La ciudad también se ve a través de ti", script)
+        self.assertIn("Recorrido galería", script)
+        self.assertIn("'Impresión'", script)
+        self.assertIn("'Clic'", script)
+        self.assertIn(".editorial-stream-promo", styles)
+        self.assertIn(".popular-stream-promo", styles)
+        self.assertIn(".upload-stream-promo", styles)
+        self.assertIn("grid-column: 1 / -1", styles)
+
     def test_sitemap_contains_photo_url(self):
         sitemap = (PROJECT_ROOT / "sitemap.xml").read_text(encoding="utf-8")
         self.assertIn("https://fotos.aldeapucela.org/f/184500/", sitemap)
