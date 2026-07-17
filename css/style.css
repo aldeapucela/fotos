@@ -396,6 +396,109 @@ body.dialog-open {
   outline-offset: 1px;
 }
 
+#lightbox-desc {
+  line-height: 1.5;
+}
+
+#lightbox-desc.is-collapsed {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+@media (max-width: 639px) {
+  /* Let the photo use only the space left by its complete record. */
+  .lightbox {
+    align-items: stretch;
+  }
+
+  .lightbox-frame {
+    display: flex;
+    flex-direction: column;
+    height: 100svh;
+    max-height: 100svh;
+  }
+
+  .lightbox-surface {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+  }
+
+  .lightbox-media,
+  .lightbox-motion-stage {
+    display: flex;
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  .lightbox-motion-stage {
+    align-items: center;
+    width: 100%;
+  }
+
+  .lightbox-img {
+    max-height: 100% !important;
+    max-width: 100%;
+  }
+
+  .lightbox-info {
+    flex: 0 0 auto;
+  }
+}
+
+.lightbox-description-provenance {
+  display: flex;
+  align-items: center;
+  min-height: 32px;
+  margin: 0 0 8px;
+  overflow: hidden;
+  color: var(--gallery-text-muted);
+  font-size: 0.82rem;
+  line-height: 1.35;
+  white-space: nowrap;
+}
+
+.lightbox-desc-toggle {
+  flex: 0 0 auto;
+  min-height: 32px;
+  margin: 0 8px 0 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--gallery-accent);
+  font-size: inherit;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.lightbox-description-provenance > span:not([aria-hidden]) {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lightbox-original-link {
+  flex: 0 0 auto;
+  color: inherit;
+  font-size: inherit;
+  font-weight: 400;
+  text-decoration: underline;
+}
+
+.lightbox-desc-toggle:hover {
+  text-decoration: underline;
+}
+
+.lightbox-desc-toggle:focus-visible,
+.lightbox-original-link:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--gallery-accent) 72%, transparent);
+  outline-offset: 3px;
+}
+
 .lightbox-mirada-context {
   display: flex;
   gap: 6px;
@@ -2280,6 +2383,13 @@ body.dialog-open {
   .editorial-lightbox {
     --lightbox-info-height: calc(220px + env(safe-area-inset-bottom));
     --lightbox-media-center: calc((100svh - var(--lightbox-info-height)) / 2);
+  }
+
+  @media (max-width: 640px) {
+    .lightbox,
+    .editorial-lightbox {
+      --lightbox-info-height: calc(280px + env(safe-area-inset-bottom));
+    }
   }
 
   .lightbox {

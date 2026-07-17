@@ -113,6 +113,13 @@ class EditorialCollectionsTest(unittest.TestCase):
         self.assertIn("Parte de", viewer)
         self.assertIn("window.convertDescriptionToLinks(value, true)", viewer)
         self.assertIn("window.DOMPurify.sanitize", viewer)
+        self.assertIn("originalUrlFromDescription", viewer)
+        self.assertIn("descriptionDetails", viewer)
+        self.assertIn("lightbox-description-provenance", viewer)
+        self.assertIn(".lightbox-frame", (PROJECT_ROOT / "css" / "style.css").read_text(encoding="utf-8"))
+        self.assertIn("height: 100svh", (PROJECT_ROOT / "css" / "style.css").read_text(encoding="utf-8"))
+        self.assertIn("foto original", viewer)
+        self.assertIn("Ver más", viewer)
         self.assertIn("window.galleryLightboxMotion?.addSwipe", viewer)
 
     def test_photo_detail_links_back_to_its_editorial_collection(self):
