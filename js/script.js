@@ -334,15 +334,29 @@ function filterByTag(event, tag, fromSidebar = false) {
     event.stopPropagation();
   }
   
-  // Close lightbox if open
-  closeLightbox();
+  // El visor compartido usa URLs canónicas /f/<id>/. Al seleccionar una
+  // etiqueta desde ahí, volvemos a la galería antes de aplicar el filtro.
+  // De otro modo el enlace relativo acabaría en /f/<id>/?tag=... y volvería
+  // a abrir la misma foto.
+  const sharedLightboxOpen = window.galleryPhotoLightbox?.isOpen?.() === true;
+  if (sharedLightboxOpen) {
+    window.galleryPhotoLightbox.close();
+  } else {
+    closeLightbox();
+  }
   
   const normalizedTag = tag.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
   
   // Update URL and title
   const url = new URL(window.location);
+  if (sharedLightboxOpen) {
+    url.pathname = '/';
+    url.hash = '';
+  }
   url.searchParams.set('tag', normalizedTag);
-  window.history.pushState({}, '', url);
+  // La foto se ha cerrado; sustituimos su entrada para que Atrás no la abra
+  // de nuevo al salir de la colección filtrada.
+  window.history[sharedLightboxOpen ? 'replaceState' : 'pushState']({}, '', url);
   
   // Show tag filter UI
   const tagTitle = document.getElementById('tagTitle');
@@ -1352,7 +1366,7 @@ function shareTagCollection() {
 // Delegación de eventos para enlaces de hashtags
 
 document.addEventListener('click', function(e) {
-  const tagLink = e.target.closest('a.tag-link');
+  const tagLink = e.target.closest('a.tag-link, a.tag-link-lightbox');
   if (tagLink) {
     e.preventDefault();
     const tag = tagLink.dataset.tag;
