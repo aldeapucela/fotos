@@ -51,6 +51,13 @@ class EditorialCollectionsTest(unittest.TestCase):
         self.assertIn("CC BY-SA 4.0", detail)
         self.assertNotIn("Ver ficha y comentarios", detail)
 
+    def test_editorial_sharing_falls_back_to_copying_with_confirmation(self):
+        script = (PROJECT_ROOT / "js" / "miradas.js").read_text(encoding="utf-8")
+        self.assertIn("async function copyToClipboard", script)
+        self.assertIn("document.execCommand('copy')", script)
+        self.assertIn("alert('URL copiada al portapapeles')", script)
+        self.assertIn("await shareOrCopy(payload)", script)
+
     def test_editorial_viewer_preloads_neighbors_and_slides_without_fading(self):
         detail = (PROJECT_ROOT / "miradas" / "arte-en-los-muros" / "index.html").read_text(encoding="utf-8")
         script = (PROJECT_ROOT / "js" / "miradas.js").read_text(encoding="utf-8")
@@ -87,6 +94,21 @@ class EditorialCollectionsTest(unittest.TestCase):
             self.assertIn("galleryLightboxMotion", content)
             self.assertIn("addSwipe", content)
             self.assertIn("onDismiss", content)
+
+    def test_all_galleries_load_the_shared_photo_viewer(self):
+        for page in (
+            PROJECT_ROOT / "index.html",
+            PROJECT_ROOT / "populares" / "index.html",
+            PROJECT_ROOT / "miradas" / "index.html",
+        ):
+            content = page.read_text(encoding="utf-8")
+            self.assertIn("photo-viewer.js", content)
+            self.assertIn("photo-viewer-adapter.js", content)
+
+        viewer = (PROJECT_ROOT / "js" / "photo-viewer.js").read_text(encoding="utf-8")
+        self.assertIn("window.galleryPhotoLightbox", viewer)
+        self.assertIn("async function share", viewer)
+        self.assertIn("window.galleryLightboxMotion?.addSwipe", viewer)
 
     def test_desktop_editorial_index_uses_a_compact_five_item_mosaic(self):
         styles = (PROJECT_ROOT / "css" / "style.css").read_text(encoding="utf-8")

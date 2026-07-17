@@ -2248,6 +2248,10 @@ body.dialog-open {
     background: #080808;
   }
 
+  #lightbox[hidden] {
+    display: none !important;
+  }
+
   .lightbox-frame {
     width: 100%;
     max-width: none !important;

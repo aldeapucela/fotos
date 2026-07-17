@@ -30,6 +30,43 @@
     window._paq.push(event);
   }
 
+  async function copyToClipboard(text) {
+    if (navigator.clipboard?.writeText) {
+      try {
+        await navigator.clipboard.writeText(text);
+        return;
+      } catch (error) {
+        // Firefox puede bloquear la Clipboard API aunque el navegador la exponga.
+      }
+    }
+
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.setAttribute('readonly', '');
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.append(textarea);
+    textarea.select();
+    const copied = document.execCommand('copy');
+    textarea.remove();
+    if (!copied) throw new Error('No se pudo copiar al portapapeles');
+  }
+
+  async function shareOrCopy(payload) {
+    try {
+      if (navigator.share) {
+        await navigator.share(payload);
+        return false;
+      }
+    } catch (error) {
+      if (error?.name === 'AbortError') return false;
+    }
+
+    await copyToClipboard(payload.url);
+    alert('URL copiada al portapapeles');
+    return true;
+  }
+
   function parseTags(value) {
     try {
       const parsed = JSON.parse(value || '[]');
@@ -285,16 +322,8 @@
   }
 
   function openLightbox(index) {
-    const lightbox = document.getElementById('editorialLightbox');
-    if (!lightbox || !state.activePhotos[index]) return;
-    state.returnUrl = `${window.location.pathname}${window.location.search}`;
-    state.returnScrollY = window.scrollY;
-    lightbox.hidden = false;
-    document.body.classList.add('dialog-open');
-    window.requestAnimationFrame(() => lightbox.classList.add('is-open'));
-    window.history.pushState({ editorialLightbox: true }, '', window.location.href);
-    renderLightboxPhoto(index);
-    lightbox.querySelector('[data-editorial-close]')?.focus();
+    if (!state.activePhotos[index] || !window.openEditorialGalleryLightbox) return;
+    window.openEditorialGalleryLightbox(state.activePhotos, index);
     track('Abrir foto', state.activeCollection?.slug || '', index + 1);
   }
 
@@ -330,8 +359,7 @@
     const url = `${window.location.origin}/f/${encodeURIComponent(photoId(photo))}/`;
     const payload = { title: 'Foto de Valladolid', text: photo.description || '', url };
     try {
-      if (navigator.share) await navigator.share(payload);
-      else await navigator.clipboard.writeText(url);
+      await shareOrCopy(payload);
       track('Compartir foto', state.activeCollection?.slug || '');
     } catch (error) {
       if (error?.name !== 'AbortError') console.error('No se pudo compartir la foto', error);
@@ -343,8 +371,7 @@
     const url = `${window.location.origin}${collectionHref(state.activeCollection)}`;
     const payload = { title: state.activeCollection.title, text: state.activeCollection.description, url };
     try {
-      if (navigator.share) await navigator.share(payload);
-      else await navigator.clipboard.writeText(url);
+      await shareOrCopy(payload);
       track('Compartir colección', state.activeCollection.slug);
     } catch (error) {
       if (error?.name !== 'AbortError') console.error('No se pudo compartir la colección', error);
