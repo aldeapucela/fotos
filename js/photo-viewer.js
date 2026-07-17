@@ -46,6 +46,7 @@
           <div class="lightbox-media relative max-w-full">
             <button id="prevPhoto" class="fixed sm:absolute left-2 top-1/2 -translate-y-1/2 bg-black/40 text-white p-3 rounded-full z-10" type="button" aria-label="Foto anterior"><i class="fa-solid fa-chevron-left text-xl" aria-hidden="true"></i></button>
             <button id="nextPhoto" class="fixed sm:absolute right-2 top-1/2 -translate-y-1/2 bg-black/40 text-white p-3 rounded-full z-10" type="button" aria-label="Foto siguiente"><i class="fa-solid fa-chevron-right text-xl" aria-hidden="true"></i></button>
+            <div class="lightbox-media-backdrop" aria-hidden="true"></div>
             <div class="lightbox-motion-stage relative overflow-hidden"><img id="lightbox-img" class="lightbox-img lightbox-motion-image w-full max-h-[70vh] object-contain mx-auto" src="" alt=""></div>
           </div>
           <div class="lightbox-info bg-white dark:bg-instagram-800 p-4">
@@ -58,9 +59,8 @@
               </div>
               <a class="text-xs text-instagram-500 hover:text-instagram-700" href="https://creativecommons.org/licenses/by-sa/4.0/deed.es" target="_blank" rel="noopener noreferrer">CC BY-SA 4.0</a>
             </div>
-            <div id="lightbox-desc" class="text-sm mb-1"></div>
-            <div id="lightbox-description-provenance" class="lightbox-description-provenance" hidden><button id="lightbox-desc-toggle" class="lightbox-desc-toggle" type="button" aria-expanded="false" hidden>Ver más</button><span id="lightbox-description-author" hidden>Autor: <span></span></span><span id="lightbox-provenance-separator" aria-hidden="true" hidden> · </span><a id="lightbox-original-link" class="lightbox-original-link" target="_blank" rel="noopener noreferrer" hidden>foto original</a></div>
-            <div class="flex items-center text-sm"><div id="lightbox-autor" class="flex items-center text-instagram-500"><i class="fa-regular fa-user mr-2" aria-hidden="true"></i><a target="_blank" rel="noopener noreferrer"></a></div><div id="lightbox-fecha" class="flex items-center ml-4 text-instagram-500"><i class="fa-regular fa-calendar mr-2" aria-hidden="true"></i><span></span></div></div>
+            <div id="lightbox-desc" class="text-sm mb-3"></div>
+            <div class="lightbox-meta flex items-center text-sm"><div id="lightbox-autor" class="flex items-center text-instagram-500"><i class="fa-regular fa-user mr-2" aria-hidden="true"></i><a target="_blank" rel="noopener noreferrer"></a></div><div id="lightbox-fecha" class="flex items-center ml-4 text-instagram-500"><i class="fa-regular fa-calendar mr-2" aria-hidden="true"></i><span></span></div></div>
           </div>
         </div>
       </div>
@@ -83,59 +83,9 @@
     );
   }
 
-  function originalUrlFromDescription(description) {
-    const match = String(description || '').match(/https?:\/\/[^\s<>()]+/i);
-    return match ? match[0].replace(/[.,!?;:]+$/, '') : '';
-  }
-
-  function descriptionDetails(description) {
-    const value = String(description || '');
-    const attribution = value.match(/(?:\s|\n)*Autor(?: de la fotografía)?\s*:\s*([^\n(]+?)(?:\s*\(\s*(https?:\/\/[^\s<>()]+)\s*\))?\s*$/i);
-    const sourceUrl = (attribution?.[2] || originalUrlFromDescription(value)).replace(/[.,!?;:]+$/, '');
-    return {
-      body: attribution ? value.slice(0, attribution.index).trim() : value,
-      author: attribution?.[1]?.trim() || '',
-      sourceUrl
-    };
-  }
-
   function setDescription(photo) {
     const description = el('#lightbox-desc');
-    const toggle = el('#lightbox-desc-toggle');
-    const provenance = el('#lightbox-description-provenance');
-    const author = el('#lightbox-description-author');
-    const separator = el('#lightbox-provenance-separator');
-    const originalLink = el('#lightbox-original-link');
-    const details = descriptionDetails(photo.description);
-    description.innerHTML = renderDescription(details.body);
-    description.classList.remove('is-collapsed');
-    toggle.hidden = true;
-    toggle.setAttribute('aria-expanded', 'true');
-    author.hidden = !details.author;
-    author.querySelector('span').textContent = details.author;
-    originalLink.hidden = true;
-    originalLink.removeAttribute('href');
-    if (details.sourceUrl) {
-      originalLink.href = details.sourceUrl;
-      originalLink.hidden = false;
-    }
-    separator.hidden = !details.author || !details.sourceUrl;
-    provenance.hidden = !details.author && !details.sourceUrl;
-
-    if (!details.body.trim()) return;
-    description.classList.add('is-collapsed');
-    requestAnimationFrame(() => {
-      if (state.items[state.index] !== photo) return;
-      const isLong = description.scrollHeight > description.clientHeight + 1;
-      if (!isLong) {
-        description.classList.remove('is-collapsed');
-        return;
-      }
-      toggle.hidden = false;
-      toggle.textContent = 'Ver más';
-      toggle.setAttribute('aria-expanded', 'false');
-      provenance.hidden = false;
-    });
+    description.innerHTML = renderDescription(photo.description);
   }
 
   function renderEditorialCollectionLink(photo) {
@@ -151,7 +101,7 @@
       link.setAttribute('aria-label', `Ver la mirada ${collection.title}`);
       link.innerHTML = `<span class="lightbox-mirada-context-label">Parte de</span><span class="lightbox-mirada-context-title"></span><i class="fa-solid fa-arrow-right" aria-hidden="true"></i>`;
       link.querySelector('.lightbox-mirada-context-title').textContent = collection.title;
-      el('#lightbox-description-provenance').insertAdjacentElement('afterend', link);
+      description.insertAdjacentElement('afterend', link);
     });
   }
 
@@ -201,6 +151,7 @@
     setDescription(photo);
     el('#lightbox-desc').closest('.lightbox-info').classList.toggle('is-description-empty', !String(photo.description || '').trim());
     renderEditorialCollectionLink(photo);
+    el('.lightbox-media-backdrop').style.backgroundImage = `url("${encodeURI(photo.src).replace(/"/g, '%22')}")`;
     const author = el('#lightbox-autor a');
     author.textContent = photo.author || 'Anónimo';
     author.href = photo.authorUrl || '';
@@ -271,13 +222,6 @@
     el('#prevPhoto').addEventListener('click', () => void show(state.index - 1, -1));
     el('#nextPhoto').addEventListener('click', () => void show(state.index + 1, 1));
     el('#lightbox-share').addEventListener('click', () => void share());
-    el('#lightbox-desc-toggle').addEventListener('click', () => {
-      const description = el('#lightbox-desc');
-      const isCollapsed = description.classList.toggle('is-collapsed');
-      const toggle = el('#lightbox-desc-toggle');
-      toggle.textContent = isCollapsed ? 'Ver más' : 'Ver menos';
-      toggle.setAttribute('aria-expanded', String(!isCollapsed));
-    });
     el('#lightbox-chat-btn').addEventListener('click', async () => {
       const photo = state.items[state.index]; if (!photo) return;
       const panel = el('#bluesky-comments-panel'); const inner = el('#bluesky-comments-panel-inner');

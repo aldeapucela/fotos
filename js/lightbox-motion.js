@@ -71,7 +71,7 @@
         resolve();
       };
       image.addEventListener('animationend', finish, { once: true });
-      window.setTimeout(finish, 340);
+      window.setTimeout(finish, 240);
     });
   }
 

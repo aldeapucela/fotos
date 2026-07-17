@@ -1944,19 +1944,19 @@ body.dialog-open {
 }
 
 .lightbox-motion-image.is-outgoing-next {
-  animation: editorial-slide-out-left 280ms cubic-bezier(0.4, 0, 0.2, 1) both;
+  animation: editorial-slide-out-left 180ms cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
 .lightbox-motion-image.is-incoming-next {
-  animation: editorial-slide-in-right 280ms cubic-bezier(0.4, 0, 0.2, 1) both;
+  animation: editorial-slide-in-right 180ms cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
 .lightbox-motion-image.is-outgoing-previous {
-  animation: editorial-slide-out-right 280ms cubic-bezier(0.4, 0, 0.2, 1) both;
+  animation: editorial-slide-out-right 180ms cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
 .lightbox-motion-image.is-incoming-previous {
-  animation: editorial-slide-in-left 280ms cubic-bezier(0.4, 0, 0.2, 1) both;
+  animation: editorial-slide-in-left 180ms cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
 @keyframes editorial-slide-out-left {
@@ -2508,6 +2508,168 @@ body.dialog-open {
     #lightbox-desc,
     #editorialLightboxDescription {
       max-height: 7.5em;
+    }
+  }
+
+  /* Compact mobile reading order: actions, provenance, one-line description, context. */
+  .lightbox-meta {
+    min-height: 20px;
+    margin: 0 0 6px;
+  }
+
+  .lightbox-meta .lightbox-mirada-context {
+    min-height: 18px;
+    margin: 0 0 0 auto;
+    padding: 0;
+    border-left: 0;
+    font-size: 0.72rem;
+    line-height: 1.2;
+    white-space: nowrap;
+  }
+
+  .lightbox-meta .lightbox-mirada-context-label {
+    display: none;
+  }
+
+  .lightbox-meta .lightbox-mirada-context-title {
+    font-size: inherit;
+    font-weight: 500;
+  }
+
+  .lightbox-meta .lightbox-mirada-context > i {
+    font-size: 0.58rem;
+  }
+
+  .lightbox-description-summary {
+    position: relative;
+    min-width: 0;
+    margin: 0 0 4px;
+  }
+
+  #lightbox-desc {
+    max-height: none;
+    margin-bottom: 0;
+    overflow: hidden;
+  }
+
+  #lightbox-desc.is-collapsed {
+    display: -webkit-box;
+    padding-right: 68px;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .lightbox-description-summary .lightbox-desc-toggle {
+    position: absolute;
+    top: auto;
+    bottom: 0;
+    right: 0;
+    min-height: 18px;
+    margin: 0;
+    padding-left: 8px;
+    background: var(--gallery-surface);
+    font-size: 0.72rem;
+    font-weight: 500;
+  }
+
+  @media (max-width: 640px) {
+    .lightbox,
+    .editorial-lightbox {
+      --lightbox-info-height: calc(188px + env(safe-area-inset-bottom));
+    }
+
+    .lightbox-info > .flex.justify-between.items-center {
+      margin-bottom: 6px !important;
+    }
+
+  }
+
+  /* On phones, preserve the photograph and let the complete record scroll below it. */
+  @media (max-width: 640px) {
+    .lightbox,
+    .editorial-lightbox {
+      --lightbox-info-height: calc(240px + env(safe-area-inset-bottom));
+    }
+
+    .lightbox {
+      position: fixed !important;
+      inset: 0 !important;
+      height: 100svh;
+      min-height: 0;
+      overflow-y: auto !important;
+      background: #080808 !important;
+    }
+
+    .lightbox-frame {
+      display: block;
+      height: auto;
+      min-height: 100svh;
+      background: #080808;
+    }
+
+    .lightbox-surface {
+      display: grid;
+      height: auto;
+      min-height: 100svh;
+      background: #080808;
+      grid-template-rows: calc(100svh - var(--lightbox-info-height)) auto;
+      overflow: visible !important;
+    }
+
+    .lightbox-media {
+      display: grid;
+      height: calc(100svh - var(--lightbox-info-height));
+      max-height: none;
+      overflow: hidden;
+      background: #080808;
+      isolation: isolate;
+    }
+
+    .lightbox-media-backdrop {
+      position: absolute;
+      z-index: 0;
+      inset: -24px;
+      background-position: center;
+      background-size: cover;
+      filter: blur(24px) saturate(0.86) brightness(0.58);
+      opacity: 0.72;
+      transform: scale(1.08);
+    }
+
+    .lightbox-media .lightbox-motion-stage {
+      display: block;
+      height: 100%;
+      z-index: 1;
+    }
+
+    .lightbox-media .lightbox-img {
+      width: 100%;
+      height: 100%;
+      max-width: none;
+      max-height: none !important;
+    }
+
+    #prevPhoto,
+    #nextPhoto {
+      position: absolute !important;
+      top: 50% !important;
+      transform: translateY(-50%);
+    }
+
+    .lightbox-info {
+      height: auto;
+      min-height: var(--lightbox-info-height);
+      overflow: visible;
+    }
+
+    #lightbox-desc {
+      max-height: none;
+      overflow: visible;
+    }
+
+    .lightbox-meta {
+      margin-top: 12px;
     }
   }
 
