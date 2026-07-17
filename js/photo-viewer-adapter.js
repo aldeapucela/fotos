@@ -11,6 +11,7 @@
       filename: String(data.path || src).split('/').pop(),
       alt: data.ai_description || data.description || '',
       description: data.description || '',
+      tags: data.ai_tags || '[]',
       author: data.author || 'Anónimo',
       authorUrl: `https://t.me/AldeaPucela/27202/${encodeURIComponent(id)}`,
       date: data.date,

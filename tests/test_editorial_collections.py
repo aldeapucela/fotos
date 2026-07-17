@@ -108,7 +108,20 @@ class EditorialCollectionsTest(unittest.TestCase):
         viewer = (PROJECT_ROOT / "js" / "photo-viewer.js").read_text(encoding="utf-8")
         self.assertIn("window.galleryPhotoLightbox", viewer)
         self.assertIn("async function share", viewer)
+        self.assertIn("Mira esta foto de Valladolid de Aldea Pucela", viewer)
+        self.assertIn("renderEditorialCollectionLink(photo)", viewer)
+        self.assertIn("Parte de", viewer)
+        self.assertIn("window.convertDescriptionToLinks(value, true)", viewer)
+        self.assertIn("window.DOMPurify.sanitize", viewer)
         self.assertIn("window.galleryLightboxMotion?.addSwipe", viewer)
+
+    def test_photo_detail_links_back_to_its_editorial_collection(self):
+        script = (PROJECT_ROOT / "js" / "script.js").read_text(encoding="utf-8")
+        styles = (PROJECT_ROOT / "css" / "style.css").read_text(encoding="utf-8")
+        self.assertIn("findEditorialCollection", script)
+        self.assertIn("renderEditorialCollectionLink(telegramId, data.ai_tags)", script)
+        self.assertIn("Parte de", script)
+        self.assertIn(".lightbox-mirada-context", styles)
 
     def test_desktop_editorial_index_uses_a_compact_five_item_mosaic(self):
         styles = (PROJECT_ROOT / "css" / "style.css").read_text(encoding="utf-8")

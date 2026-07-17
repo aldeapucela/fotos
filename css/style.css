@@ -396,6 +396,46 @@ body.dialog-open {
   outline-offset: 1px;
 }
 
+.lightbox-mirada-context {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  min-height: 32px;
+  margin: 4px 0 12px;
+  padding: 3px 0 3px 10px;
+  border-left: 1px solid color-mix(in srgb, var(--gallery-accent) 60%, transparent);
+  color: var(--gallery-text-muted);
+  text-decoration: none;
+}
+
+.lightbox-mirada-context:hover {
+  color: var(--gallery-accent);
+}
+
+.lightbox-mirada-context-label {
+  font-size: 0.79rem;
+  line-height: 1.35;
+}
+
+.lightbox-mirada-context-title {
+  overflow: hidden;
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lightbox-mirada-context > i {
+  margin-left: 1px;
+  font-size: 0.68rem;
+}
+
+.lightbox-mirada-context:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--gallery-accent) 72%, transparent);
+  outline-offset: 3px;
+}
+
 #contenido.list-view .popular-photo-stats {
   display: none;
 }

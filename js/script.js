@@ -8,6 +8,64 @@ let allPhotos = []; // Para almacenar todas las fotos
 let blueskyCache = {}; // Para almacenar datos de Bluesky
 let isLightboxSliding = false;
 let galleryReturnScrollY = null;
+let editorialCollectionsPromise = null;
+
+function normalizeEditorialValue(value = '') {
+  return String(value)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLowerCase();
+}
+
+function findEditorialCollection(photoId, tagsValue) {
+  if (!editorialCollectionsPromise) {
+    editorialCollectionsPromise = fetch('/data/editorial-collections.json')
+      .then(response => response.ok ? response.json() : [])
+      .catch(() => []);
+  }
+
+  return editorialCollectionsPromise.then(collections => {
+    let tags = [];
+    try {
+      tags = Array.isArray(tagsValue) ? tagsValue : JSON.parse(tagsValue || '[]');
+    } catch (_) {
+      tags = [];
+    }
+    const normalizedTags = new Set(tags.map(normalizeEditorialValue));
+    return collections
+      .filter(collection => collection.published)
+      .sort((first, second) => Number(second.featured) - Number(first.featured))
+      .find(collection => {
+        const id = String(photoId);
+        if ((collection.manualExclude || []).map(String).includes(id)) return false;
+        if ((collection.manualInclude || []).map(String).includes(id)) return true;
+        return (collection.matchTags || []).some(tag => normalizedTags.has(normalizeEditorialValue(tag)));
+      });
+  });
+}
+
+function renderEditorialCollectionLink(photoId, tagsValue) {
+  const description = document.getElementById('lightbox-desc');
+  document.getElementById('lightbox-mirada-context')?.remove();
+  if (!description || !photoId) return;
+  description.dataset.miradaPhotoId = String(photoId);
+
+  findEditorialCollection(photoId, tagsValue).then(collection => {
+    if (!collection || description.dataset.miradaPhotoId !== String(photoId) || document.getElementById('lightbox-mirada-context')) return;
+    const link = document.createElement('a');
+    link.id = 'lightbox-mirada-context';
+    link.className = 'lightbox-mirada-context';
+    link.href = `/miradas/${encodeURIComponent(collection.slug)}/`;
+    link.innerHTML = DOMPurify.sanitize(`
+      <span class="lightbox-mirada-context-label">Parte de</span>
+      <span class="lightbox-mirada-context-title">${collection.title}</span>
+      <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+    `);
+    link.setAttribute('aria-label', `Ver la mirada ${collection.title}`);
+    description.insertAdjacentElement('afterend', link);
+  });
+}
 
 function getPhotoUrl(photoId) {
   return `/f/${encodeURIComponent(photoId)}/`;
@@ -473,6 +531,7 @@ function openLightbox(imgSrc, data, { updateHistory = true, skipImageUpdate = fa
   const filename = data.path?.split('/').pop() || '';
   const telegramId = filename.replace('.jpg', '').replace('.png', '').replace('.jpeg', '');
   const canonicalUrl = getAbsolutePhotoUrl(telegramId);
+  renderEditorialCollectionLink(telegramId, data.ai_tags);
   const blueskyDiv = document.getElementById('bluesky-comments');
   const commentsBtn = document.getElementById('lightbox-chat-btn');
   const commentsBadge = document.getElementById('lightbox-comments-count');

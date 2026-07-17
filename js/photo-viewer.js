@@ -1,6 +1,34 @@
 (() => {
   let root;
   let state = { items: [], index: -1, returnUrl: '', returnScrollY: 0, transitioning: false };
+  let editorialCollectionsPromise;
+
+  const normalizeEditorialValue = value => String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLowerCase();
+
+  function findEditorialCollection(photo) {
+    if (!editorialCollectionsPromise) {
+      editorialCollectionsPromise = fetch('/data/editorial-collections.json')
+        .then(response => response.ok ? response.json() : [])
+        .catch(() => []);
+    }
+    return editorialCollectionsPromise.then(collections => {
+      let tags = [];
+      try { tags = Array.isArray(photo.tags) ? photo.tags : JSON.parse(photo.tags || '[]'); } catch (_) { tags = []; }
+      const normalizedTags = new Set(tags.map(normalizeEditorialValue));
+      return collections
+        .filter(collection => collection.published)
+        .sort((first, second) => Number(second.featured) - Number(first.featured))
+        .find(collection => {
+          if ((collection.manualExclude || []).map(String).includes(String(photo.id))) return false;
+          if ((collection.manualInclude || []).map(String).includes(String(photo.id))) return true;
+          return (collection.matchTags || []).some(tag => normalizedTags.has(normalizeEditorialValue(tag)));
+        });
+    });
+  }
 
   function mount() {
     if (root) return root;
@@ -45,6 +73,32 @@
   const photoUrl = photo => `${window.location.origin}/f/${encodeURIComponent(photo.id)}/`;
   const isOpen = () => root && root.classList.contains('active');
 
+  function renderDescription(description) {
+    const value = String(description || '');
+    if (typeof window.convertDescriptionToLinks !== 'function' || !window.DOMPurify) return value;
+    return window.DOMPurify.sanitize(
+      window.convertDescriptionToLinks(value, true),
+      { ADD_ATTR: ['data-tag', 'target', 'rel'] }
+    );
+  }
+
+  function renderEditorialCollectionLink(photo) {
+    const description = el('#lightbox-desc');
+    root.querySelector('#lightbox-mirada-context')?.remove();
+    description.dataset.miradaPhotoId = String(photo.id);
+    void findEditorialCollection(photo).then(collection => {
+      if (!collection || description.dataset.miradaPhotoId !== String(photo.id)) return;
+      const link = document.createElement('a');
+      link.id = 'lightbox-mirada-context';
+      link.className = 'lightbox-mirada-context';
+      link.href = `/miradas/${encodeURIComponent(collection.slug)}/`;
+      link.setAttribute('aria-label', `Ver la mirada ${collection.title}`);
+      link.innerHTML = `<span class="lightbox-mirada-context-label">Parte de</span><span class="lightbox-mirada-context-title"></span><i class="fa-solid fa-arrow-right" aria-hidden="true"></i>`;
+      link.querySelector('.lightbox-mirada-context-title').textContent = collection.title;
+      description.insertAdjacentElement('afterend', link);
+    });
+  }
+
   function setNavigation() {
     const previous = el('#prevPhoto');
     const next = el('#nextPhoto');
@@ -88,8 +142,9 @@
     state.index = index;
     closeComments();
     setNavigation();
-    el('#lightbox-desc').textContent = photo.description || '';
+    el('#lightbox-desc').innerHTML = renderDescription(photo.description);
     el('#lightbox-desc').closest('.lightbox-info').classList.toggle('is-description-empty', !String(photo.description || '').trim());
+    renderEditorialCollectionLink(photo);
     const author = el('#lightbox-autor a');
     author.textContent = photo.author || 'Anónimo';
     author.href = photo.authorUrl || '';
@@ -134,6 +189,9 @@
     const photo = state.items[state.index];
     if (!photo) return;
     const payload = { title: 'Foto de Valladolid - Aldea Pucela', text: photo.description || '', url: photoUrl(photo) };
+    const copyText = payload.text.trim()
+      ? `Mira esta foto de Valladolid de Aldea Pucela\n\n"${payload.text.trim()}"\n\n${payload.url}`
+      : `Mira esta foto de Valladolid de Aldea Pucela\n\n${payload.url}`;
     try {
       if (navigator.share) await navigator.share(payload);
       else throw new Error('Web Share no disponible');
@@ -141,10 +199,10 @@
       if (error?.name === 'AbortError') return;
       try {
         if (!navigator.clipboard?.writeText) throw new Error('Clipboard API no disponible');
-        await navigator.clipboard.writeText(payload.url);
+        await navigator.clipboard.writeText(copyText);
       } catch (_) {
         const textarea = document.createElement('textarea');
-        textarea.value = payload.url;
+        textarea.value = copyText;
         textarea.style.cssText = 'position:fixed;opacity:0';
         document.body.append(textarea); textarea.select(); document.execCommand('copy'); textarea.remove();
       }
