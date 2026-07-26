@@ -2,6 +2,19 @@
   const MIRADAS_AFTER_PHOTOS = 60;
   const POPULAR_AFTER_PHOTOS = 90;
   const UPLOAD_AFTER_PHOTOS = 150;
+  // Campañas puntuales de portada. Para reutilizarlas, añade una entrada con sus
+  // fechas ISO y la colección de Miradas que se quiera destacar.
+  const TEMPORARY_CAMPAIGNS = [
+    {
+      id: 'murales-verano-2026',
+      collectionSlug: 'arte-en-los-muros',
+      startsAt: '2026-07-26T00:00:00+02:00',
+      endsAt: '2026-08-10T23:59:59+02:00',
+      eyebrow: 'Actividad destacada',
+      title: 'Descubre y captura los murales de la ciudad',
+      action: 'Explorar los murales'
+    }
+  ];
   const COLLECTIONS_URL = '/data/editorial-collections.json';
   const MIRADAS_SEEN_KEY = 'aldea-fotos:miradas-seen';
   const POPULAR_VISITED_KEY = 'aldea-fotos:populares-visited-session';
@@ -102,6 +115,16 @@
     return ordered[week % ordered.length];
   }
 
+  function activeTemporaryCampaigns() {
+    const now = Date.now();
+    return TEMPORARY_CAMPAIGNS.filter(campaign => {
+      const startsAt = Date.parse(campaign.startsAt);
+      const endsAt = Date.parse(campaign.endsAt);
+      return Number.isFinite(startsAt) && Number.isFinite(endsAt)
+        && startsAt <= now && now <= endsAt;
+    });
+  }
+
   function loadPopularPhotos() {
     if (!popularPhotosPromise) {
       popularPhotosPromise = window.databaseManager.getDatabase().then(database => {
@@ -164,6 +187,41 @@
       track('Clic', 'miradas', MIRADAS_AFTER_PHOTOS, collection.slug);
     });
     observeImpression(promo, 'miradas', MIRADAS_AFTER_PHOTOS, collection.slug);
+    return promo;
+  }
+
+  function createTemporaryCampaign(campaign, collection) {
+    const promo = document.createElement('a');
+    promo.className = 'temporary-campaign-promo';
+    promo.dataset.galleryJourneyPromo = 'temporary-campaign';
+    promo.dataset.temporaryCampaign = campaign.id;
+    promo.href = `/miradas/${encodeURIComponent(collection.slug)}/`;
+    promo.setAttribute('aria-label', `${campaign.title}. Explorar ${collection.title}`);
+
+    const media = document.createElement('span');
+    media.className = 'temporary-campaign-promo-media';
+    const image = document.createElement('img');
+    image.src = `/files/${encodeURIComponent(collection.coverPhotoId)}.jpg`;
+    image.alt = '';
+    image.decoding = 'async';
+    media.appendChild(image);
+
+    const copy = document.createElement('span');
+    copy.className = 'temporary-campaign-promo-copy';
+    copy.innerHTML = `
+      <span class="temporary-campaign-promo-eyebrow"><i class="fa-regular fa-compass" aria-hidden="true"></i> ${campaign.eyebrow}</span>
+      <strong>${campaign.title}</strong>
+    `;
+    const action = document.createElement('span');
+    action.className = 'temporary-campaign-promo-action';
+    action.innerHTML = `${campaign.action} <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>`;
+
+    promo.append(media, copy, action);
+    promo.addEventListener('click', () => {
+      rememberCollection(collection.slug);
+      track('Clic', `campaña-${campaign.id}`, 0, collection.slug);
+    });
+    observeImpression(promo, `campaña-${campaign.id}`, 0, collection.slug);
     return promo;
   }
 
@@ -244,8 +302,9 @@
     if (hasActiveFilter(photos)) return;
 
     try {
+      const campaigns = activeTemporaryCampaigns();
       const [collections, popularPhotos] = await Promise.all([
-        photos.length >= MIRADAS_AFTER_PHOTOS ? loadCollections() : Promise.resolve([]),
+        campaigns.length || photos.length >= MIRADAS_AFTER_PHOTOS ? loadCollections() : Promise.resolve([]),
         photos.length >= POPULAR_AFTER_PHOTOS && !readSessionFlag(POPULAR_VISITED_KEY)
           ? loadPopularPhotos()
           : Promise.resolve([])
@@ -255,6 +314,12 @@
       const currentPhotos = [...content.querySelectorAll('.photo-card')];
       if (hasActiveFilter(currentPhotos) || content.classList.contains('list-view')) return;
 
+      campaigns.forEach(campaign => {
+        const collection = collections.find(item => item.slug === campaign.collectionSlug);
+        if (collection && currentPhotos.length >= 6) {
+          currentPhotos[5].after(createTemporaryCampaign(campaign, collection));
+        }
+      });
       const collection = chooseCollection(collections);
       if (collection) insertAfterPhoto(currentPhotos, MIRADAS_AFTER_PHOTOS, createMiradasPromo(collection));
       if (popularPhotos.length) insertAfterPhoto(currentPhotos, POPULAR_AFTER_PHOTOS, createPopularPromo(popularPhotos));
