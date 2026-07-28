@@ -104,6 +104,7 @@ class EditorialCollectionsTest(unittest.TestCase):
             content = page.read_text(encoding="utf-8")
             self.assertIn("photo-viewer.js", content)
             self.assertIn("photo-viewer-adapter.js", content)
+            self.assertIn("photo-viewer.js?202607291230", content)
 
         viewer = (PROJECT_ROOT / "js" / "photo-viewer.js").read_text(encoding="utf-8")
         self.assertIn("window.galleryPhotoLightbox", viewer)
@@ -114,6 +115,8 @@ class EditorialCollectionsTest(unittest.TestCase):
         self.assertIn("window.convertDescriptionToLinks(value, true)", viewer)
         self.assertIn("window.DOMPurify.sanitize", viewer)
         self.assertIn("renderDescription(photo.description)", viewer)
+        self.assertIn("renderStandaloneDescription", viewer)
+        self.assertIn('>foto original</a>', viewer)
         self.assertIn("lightbox-media-backdrop", viewer)
         self.assertIn("--lightbox-info-height: calc(240px", (PROJECT_ROOT / "css" / "style.css").read_text(encoding="utf-8"))
         self.assertIn("grid-template-rows: calc(100svh - var(--lightbox-info-height)) auto", (PROJECT_ROOT / "css" / "style.css").read_text(encoding="utf-8"))
@@ -121,6 +124,17 @@ class EditorialCollectionsTest(unittest.TestCase):
         self.assertIn("height: 100svh", (PROJECT_ROOT / "css" / "style.css").read_text(encoding="utf-8"))
         self.assertIn("180ms cubic-bezier(0.4, 0, 0.2, 1)", (PROJECT_ROOT / "css" / "style.css").read_text(encoding="utf-8"))
         self.assertIn("window.galleryLightboxMotion?.addSwipe", viewer)
+
+    def test_gallery_entry_points_delegate_to_the_shared_lightbox(self):
+        recent = (PROJECT_ROOT / "js" / "script.js").read_text(encoding="utf-8")
+        popular = (PROJECT_ROOT / "js" / "populares.js").read_text(encoding="utf-8")
+        editorial = (PROJECT_ROOT / "js" / "miradas.js").read_text(encoding="utf-8")
+
+        self.assertIn("window.openLightbox?.(card._photoPath, card._photoData)", recent)
+        self.assertIn("function openLegacyLightbox", recent)
+        self.assertIn("window.openPopularLightbox?.(card._photoData)", popular)
+        self.assertIn("function openLegacyPopularLightbox", popular)
+        self.assertIn("window.openEditorialGalleryLightbox(state.activePhotos, index)", editorial)
 
     def test_photo_detail_links_back_to_its_editorial_collection(self):
         script = (PROJECT_ROOT / "js" / "script.js").read_text(encoding="utf-8")

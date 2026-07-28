@@ -361,7 +361,9 @@ function getPopularPhotoId(photo) {
   return photo.path.replace(/\.(?:jpe?g|png)$/i, '');
 }
 
-function openPopularLightbox(photo, { updateHistory = true, skipImageUpdate = false } = {}) {
+// Implementación anterior conservada solo como referencia durante la migración.
+// Las entradas de la galería llaman explícitamente al visor compartido.
+function openLegacyPopularLightbox(photo, { updateHistory = true, skipImageUpdate = false } = {}) {
   const lightbox = document.getElementById('lightbox');
   const image = document.getElementById('lightbox-img');
   if (!lightbox || !image || !photo) return;
@@ -525,7 +527,7 @@ async function transitionToPopularPhoto(direction, photo) {
   const image = document.getElementById('lightbox-img');
   const motion = window.galleryLightboxMotion;
   if (!image || !motion) {
-    openPopularLightbox(photo);
+    window.openPopularLightbox?.(photo);
     return;
   }
 
@@ -539,7 +541,7 @@ async function transitionToPopularPhoto(direction, photo) {
       alt: photo.ai_description || photo.description || '',
       direction,
       isActive: () => lightbox?.classList.contains('active'),
-      onCommit: () => openPopularLightbox(photo, { skipImageUpdate: true })
+      onCommit: () => window.openPopularLightbox?.(photo, { skipImageUpdate: true })
     });
   } finally {
     lightbox?.classList.remove('is-sliding');
@@ -670,7 +672,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const card = link.closest('.photo-card');
     if (!card?._photoData) return;
     event.preventDefault();
-    openPopularLightbox(card._photoData);
+    window.openPopularLightbox?.(card._photoData);
   });
 
   document.getElementById('lightbox-close')?.addEventListener('click', () => closePopularLightbox());

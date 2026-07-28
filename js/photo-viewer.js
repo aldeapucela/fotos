@@ -74,13 +74,36 @@
   const photoUrl = photo => `${window.location.origin}/f/${encodeURIComponent(photo.id)}/`;
   const isOpen = () => root && root.classList.contains('active');
 
+  function escapeHtml(value) {
+    return String(value || '').replace(/[&<>"']/g, character => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#039;'
+    })[character]);
+  }
+
+  // Las páginas de Miradas no cargan js/script.js, donde vive el enlazador
+  // general de descripciones. El visor compartido debe conservar enlaces
+  // externos también en ese contexto.
+  function renderStandaloneDescription(value) {
+    const urlClass = 'text-instagram-600 dark:text-instagram-400 hover:underline';
+    return escapeHtml(value).replace(/https?:\/\/[^\s<>()]+/gi, match => {
+      const trailingPunctuation = match.match(/[.,!?;:]+$/)?.[0] || '';
+      const url = trailingPunctuation ? match.slice(0, -trailingPunctuation.length) : match;
+      return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="${urlClass}">foto original</a>${trailingPunctuation}`;
+    });
+  }
+
   function renderDescription(description) {
     const value = String(description || '');
-    if (typeof window.convertDescriptionToLinks !== 'function' || !window.DOMPurify) return value;
-    return window.DOMPurify.sanitize(
-      window.convertDescriptionToLinks(value, true),
-      { ADD_ATTR: ['data-tag', 'target', 'rel'] }
-    );
+    const rendered = typeof window.convertDescriptionToLinks === 'function'
+      ? window.convertDescriptionToLinks(value, true)
+      : renderStandaloneDescription(value);
+    return window.DOMPurify
+      ? window.DOMPurify.sanitize(rendered, { ADD_ATTR: ['data-tag', 'target', 'rel'] })
+      : rendered;
   }
 
   function setDescription(photo) {

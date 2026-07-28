@@ -536,11 +536,12 @@ contenido?.addEventListener('click', event => {
 
   event.preventDefault();
   galleryReturnScrollY = window.scrollY;
-  openLightbox(card._photoPath, card._photoData);
+  window.openLightbox?.(card._photoPath, card._photoData);
 });
 
-// Open lightbox with photo details
-function openLightbox(imgSrc, data, { updateHistory = true, skipImageUpdate = false } = {}) {
+// Implementación anterior conservada solo como referencia durante la migración.
+// Las entradas de la galería llaman explícitamente al visor compartido.
+function openLegacyLightbox(imgSrc, data, { updateHistory = true, skipImageUpdate = false } = {}) {
   // Obtener filename y telegramId para la URL canónica y Telegram
   const filename = data.path?.split('/').pop() || '';
   const telegramId = filename.replace('.jpg', '').replace('.png', '').replace('.jpeg', '');
@@ -743,7 +744,7 @@ async function transitionToPhoto(direction, photo) {
   if (isLightboxSliding || !photo || !lightboxImg) return;
   const motion = window.galleryLightboxMotion;
   if (!motion) {
-    openLightbox(photo.path, photo.data);
+    window.openLightbox?.(photo.path, photo.data);
     return;
   }
 
@@ -757,7 +758,7 @@ async function transitionToPhoto(direction, photo) {
       alt: photo.data.ai_description || photo.data.description || '',
       direction,
       isActive: () => lightbox?.classList.contains('active'),
-      onCommit: () => openLightbox(photo.path, photo.data, { skipImageUpdate: true })
+      onCommit: () => window.openLightbox?.(photo.path, photo.data, { skipImageUpdate: true })
     });
   } finally {
     lightbox?.classList.remove('is-sliding');
@@ -1254,7 +1255,7 @@ if (searchParam) {
       if (photoToOpen) {
         // Small delay to ensure filters are applied first
         setTimeout(() => {
-          openLightbox(photoToOpen.path, photoToOpen.data, { updateHistory: false });
+          window.openLightbox?.(photoToOpen.path, photoToOpen.data, { updateHistory: false });
         }, 100);
       }
 
@@ -1277,7 +1278,7 @@ window.addEventListener('popstate', () => {
 
   const photoCard = document.querySelector(`.photo-card[data-photo-id="${CSS.escape(photoId)}"]`);
   if (photoCard?._photoPath && photoCard?._photoData) {
-    openLightbox(photoCard._photoPath, photoCard._photoData, { updateHistory: false });
+    window.openLightbox?.(photoCard._photoPath, photoCard._photoData, { updateHistory: false });
   }
 });
 
