@@ -229,6 +229,15 @@ python3 ./scripts/update-ai-tags.py
 - Solo incluye etiquetas de imágenes marcadas como apropiadas
 - Necesario ejecutar después de añadir nuevas fotos o actualizar análisis de IA
 
+### Corregir la moderación de una foto
+```bash
+python3 ./scripts/moderar-foto.py aprobar 184500
+```
+- Muestra la foto y su estado actual antes de pedir confirmación.
+- `aprobar` la vuelve a publicar; `rechazar` la oculta de nuevo.
+- Tras confirmar, regenera el RSS, `data.json`, las páginas individuales y el caché de etiquetas de IA.
+- Usa `--force` (o `-f`) únicamente cuando no sea necesaria la confirmación interactiva.
+
 Recomendable ejecutar ambos scripts al menos cada hora en un cron.
 
 ## Funcionalidad de fotos populares
