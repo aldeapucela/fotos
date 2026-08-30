@@ -8,7 +8,11 @@ from datetime import datetime
 from pathlib import Path
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
-from generate_photo_pages import generate_photo_pages, write_text_if_changed
+from generate_photo_pages import (
+    deduplicate_public_photos,
+    generate_photo_pages,
+    write_text_if_changed,
+)
 
 def iso8601_to_rfc822(iso_date):
     """Convert ISO 8601 date to RFC 822 format required by RSS"""
@@ -66,6 +70,13 @@ def generate_rss(project_root=None):
                 AND (ia.is_appropriate = 1 OR ia.is_appropriate IS NULL)
                 ORDER BY i.date DESC
             """).fetchall()
+
+        photos, duplicate_ids = deduplicate_public_photos(photos)
+        if duplicate_ids:
+            print(
+                "Aviso: se han ignorado filas duplicadas del RSS para los "
+                f"identificadores {', '.join(duplicate_ids)}; se conserva la más reciente."
+            )
 
         output_path = project_root / 'feed.xml'
         json_output_path = project_root / 'data.json'

@@ -210,6 +210,41 @@ class StaticPhotoPagesTest(unittest.TestCase):
             self.assertIn("Segunda foto modificada", second_page.read_text(encoding="utf-8"))
             self.assertFalse(first_page.parent.exists())
 
+    def test_duplicate_public_ids_do_not_abort_the_build(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "index.html").write_text(
+                "<html><head>\n<!-- SOCIAL_META_START -->\n"
+                "<title>Plantilla</title>\n<!-- SOCIAL_META_END -->\n"
+                "</head><body></body></html>",
+                encoding="utf-8",
+            )
+            (root / "files").mkdir()
+            shutil.copyfile(PROJECT_ROOT / "files" / "184500.jpg", root / "files" / "1.jpg")
+
+            with sqlite3.connect(root / "fotos.db") as connection:
+                connection.executescript(
+                    """
+                    CREATE TABLE imagenes (
+                        id INTEGER PRIMARY KEY, path TEXT, date TEXT,
+                        author TEXT, description TEXT
+                    );
+                    CREATE TABLE image_analysis (
+                        image_id INTEGER, is_appropriate INTEGER
+                    );
+                    INSERT INTO imagenes VALUES
+                        (1, '1.jpg', '2026-07-14T11:00:00+02:00', 'Ana', 'Versión antigua'),
+                        (2, '1.jpg', '2026-07-14T12:00:00+02:00', 'Luis', 'Versión más reciente');
+                    """
+                )
+
+            generated = MODULE.generate_photo_pages(root)
+
+            self.assertEqual(generated, 1)
+            page = root / "f" / "1" / "index.html"
+            self.assertTrue(page.is_file())
+            self.assertIn("Versión más reciente", page.read_text(encoding="utf-8"))
+
 
 if __name__ == "__main__":
     unittest.main()

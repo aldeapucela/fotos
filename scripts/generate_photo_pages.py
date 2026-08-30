@@ -161,6 +161,28 @@ def public_photos(db_path: Path) -> list[sqlite3.Row]:
         connection.close()
 
 
+def deduplicate_public_photos(photos):
+    """Keep the newest row for each public photo identifier.
+
+    Both the static URL and the RSS link are derived from the filename stem.
+    A repeated database row (or two extensions with the same stem) must not
+    prevent the whole public build from completing. Queries are ordered newest
+    first, so the first row is the deterministic one to keep.
+    """
+    unique = []
+    duplicate_ids = []
+    seen_ids = set()
+    for photo in photos:
+        path = photo["path"] if hasattr(photo, "keys") else photo[0]
+        photo_id = photo_id_from_path(path)
+        if photo_id in seen_ids:
+            duplicate_ids.append(photo_id)
+            continue
+        seen_ids.add(photo_id)
+        unique.append(photo)
+    return unique, sorted(set(duplicate_ids))
+
+
 def write_text_if_changed(path: Path, content: str, mode: int = 0o644) -> bool:
     """Atomically write text only when its bytes differ from the existing file."""
     try:
@@ -246,7 +268,14 @@ def generate_photo_pages(project_root: Path | None = None) -> int:
     if not META_BLOCK_RE.search(template):
         raise RuntimeError("No se encontró el bloque SOCIAL_META en index.html")
 
-    photos = public_photos(project_root / "fotos.db")
+    photos, duplicate_ids = deduplicate_public_photos(
+        public_photos(project_root / "fotos.db")
+    )
+    if duplicate_ids:
+        print(
+            "Aviso: se han ignorado filas duplicadas para los identificadores "
+            f"{', '.join(duplicate_ids)}; se conserva la foto más reciente."
+        )
     ids = [photo_id_from_path(photo["path"]) for photo in photos]
     if len(ids) != len(set(ids)):
         raise RuntimeError("Hay identificadores públicos de foto duplicados")
