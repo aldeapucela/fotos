@@ -13,6 +13,16 @@ BLUESKY_THREAD_HANDLE = 'fotos.aldeapucela.org'
 API_BASE_URL = 'https://public.api.bsky.app/xrpc/app.bsky.feed.getPostThread'
 RATE_LIMIT_DELAY = 0.5  # 500ms entre requests para ser respetuosos
 BATCH_SIZE = 10  # Procesar en lotes pequeños
+SQLITE_BUSY_TIMEOUT_SECONDS = 30
+
+
+def connect_database(db_path):
+    """Open SQLite with a bounded wait for short-lived concurrent writes."""
+    connection = sqlite3.connect(db_path, timeout=SQLITE_BUSY_TIMEOUT_SECONDS)
+    connection.execute(
+        f"PRAGMA busy_timeout = {SQLITE_BUSY_TIMEOUT_SECONDS * 1000}"
+    )
+    return connection
 
 def get_project_root():
     """Obtener el directorio raíz del proyecto"""
@@ -70,26 +80,31 @@ def update_bluesky_cache(force=False, photo=None, test_mode=False):
         return False
     
     try:
-        conn = sqlite3.connect(db_path)
-        cursor = conn.cursor()
-        
-        # Obtener todos los posts de Bluesky con sus IDs de imagen
-        query = """
-            SELECT bp.image_id, bp.post_id, i.path, bic.last_updated
-            FROM bluesky_posts bp
-            JOIN imagenes i ON bp.image_id = i.id
-            LEFT JOIN bluesky_interactions_cache bic ON bp.image_id = bic.image_id
-        """
-        params = []
-        if photo:
-            query += " WHERE i.path = ? OR i.path GLOB ?"
-            params = [photo, f"{photo}.*"]
-        query += """
-            ORDER BY bp.image_id
-        """
-        cursor.execute(query, params)
-        
-        posts = cursor.fetchall()
+        # Cargar la lista y cerrar esta conexión antes de llamar a la API.
+        # Mantener una lectura abierta durante la sincronización bloquea las
+        # escrituras concurrentes de n8n en la misma base SQLite.
+        conn = connect_database(db_path)
+        try:
+            cursor = conn.cursor()
+
+            # Obtener todos los posts de Bluesky con sus IDs de imagen
+            query = """
+                SELECT bp.image_id, bp.post_id, i.path, bic.last_updated
+                FROM bluesky_posts bp
+                JOIN imagenes i ON bp.image_id = i.id
+                LEFT JOIN bluesky_interactions_cache bic ON bp.image_id = bic.image_id
+            """
+            params = []
+            if photo:
+                query += " WHERE i.path = ? OR i.path GLOB ?"
+                params = [photo, f"{photo}.*"]
+            query += """
+                ORDER BY bp.image_id
+            """
+            cursor.execute(query, params)
+            posts = cursor.fetchall()
+        finally:
+            conn.close()
         
         # Limitar posts en modo de prueba
         if test_mode:
@@ -137,17 +152,24 @@ def update_bluesky_cache(force=False, photo=None, test_mode=False):
                 error_count += 1
                 continue
             
-            # Actualizar o insertar en el cache
-            cursor.execute("""
-                INSERT OR REPLACE INTO bluesky_interactions_cache 
-                (image_id, like_count, comment_count, repost_count, last_updated)
-                VALUES (?, ?, ?, ?, datetime('now'))
-            """, (
-                image_id,
-                stats['like_count'],
-                stats['comment_count'],
-                stats['repost_count']
-            ))
+            # Actualizar o insertar en una transacción breve. La conexión se
+            # abre después de la llamada externa y se confirma inmediatamente
+            # para no retener el bloqueo mientras se procesa el siguiente post.
+            write_conn = connect_database(db_path)
+            try:
+                write_conn.execute("""
+                    INSERT OR REPLACE INTO bluesky_interactions_cache
+                    (image_id, like_count, comment_count, repost_count, last_updated)
+                    VALUES (?, ?, ?, ?, datetime('now'))
+                """, (
+                    image_id,
+                    stats['like_count'],
+                    stats['comment_count'],
+                    stats['repost_count']
+                ))
+                write_conn.commit()
+            finally:
+                write_conn.close()
             
             updated_count += 1
             print(f"✅ Actualizado: {stats['like_count']} likes, {stats['comment_count']} comentarios, {stats['repost_count']} reposts")
@@ -155,10 +177,6 @@ def update_bluesky_cache(force=False, photo=None, test_mode=False):
             # Rate limiting - pausa entre requests
             if i < total_posts:  # No pausar en el último
                 time.sleep(RATE_LIMIT_DELAY)
-        
-        # Confirmar cambios
-        conn.commit()
-        conn.close()
         
         # Resumen final
         print(f"\n🎉 Actualización completada:")
@@ -182,7 +200,7 @@ def show_cache_stats():
     db_path = os.path.join(project_root, 'fotos.db')
     
     try:
-        conn = sqlite3.connect(db_path)
+        conn = connect_database(db_path)
         cursor = conn.cursor()
         
         # Estadísticas generales

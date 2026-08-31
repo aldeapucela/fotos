@@ -57,6 +57,34 @@ class BlueskySyncTest(unittest.TestCase):
         connection.close()
         self.assertEqual(rows, [(1, 1, 2, 3), (2, 4, 0, 0)])
 
+    def test_each_update_is_committed_before_the_next_api_call(self):
+        with sqlite3.connect(self.db_path) as connection:
+            connection.execute(
+                "UPDATE bluesky_interactions_cache SET last_updated = '2020-01-01 00:00:00'"
+            )
+
+        seen_posts = []
+        stats = {
+            "post-one": {"like_count": 10, "comment_count": 1, "repost_count": 2},
+            "post-two": {"like_count": 20, "comment_count": 3, "repost_count": 4},
+        }
+
+        def get_stats(post_id):
+            if seen_posts:
+                with sqlite3.connect(self.db_path) as connection:
+                    previous = connection.execute(
+                        "SELECT like_count FROM bluesky_interactions_cache WHERE image_id = 1"
+                    ).fetchone()[0]
+                self.assertEqual(previous, 10)
+            seen_posts.append(post_id)
+            return stats[post_id]
+
+        with patch.object(bluesky_sync, "get_project_root", return_value=self.tempdir.name), \
+             patch.object(bluesky_sync, "get_bluesky_stats", side_effect=get_stats):
+            self.assertTrue(bluesky_sync.update_bluesky_cache(force=True))
+
+        self.assertEqual(seen_posts, ["post-one", "post-two"])
+
 
 if __name__ == "__main__":
     unittest.main()
