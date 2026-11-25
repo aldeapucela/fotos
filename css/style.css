@@ -141,6 +141,7 @@ body.dialog-open {
 .view-toggle-button:focus-visible,
 .bottom-navigation-item:focus-visible,
 .license-dialog-link:focus-visible,
+.license-inline-link:focus-visible,
 .photo-card a:focus-visible {
   outline: 3px solid color-mix(in srgb, var(--gallery-accent) 72%, transparent);
   outline-offset: 2px;
@@ -179,6 +180,12 @@ body.dialog-open {
 .license-meta {
   color: var(--gallery-text-muted);
   font-size: 0.8125rem;
+}
+
+.license-inline-link {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 .license-info-button {
